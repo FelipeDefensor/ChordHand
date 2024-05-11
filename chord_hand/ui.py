@@ -461,7 +461,7 @@ class MainWindow(QMainWindow):
             )
 
     def write_to_csv(self, path):
-        with open(path, 'w', newline='') as f:
+        with open(path, 'w', newline='', encoding='utf-8') as f:
             csv_writer = csv.writer(f)
             for i, measure in enumerate(self.get_chords()):
                 for j, chord in enumerate(measure):
