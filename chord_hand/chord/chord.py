@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from chord_hand.chord.chord_quality import ChordQuality
+from chord_hand.chord.quality import ChordQuality
 from chord_hand.chord.note import Note
 
 

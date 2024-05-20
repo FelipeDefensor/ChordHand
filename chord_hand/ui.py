@@ -1,255 +1,38 @@
 import csv
-import functools
 import json
-import sys
-from enum import StrEnum, auto
 
 import pandas as pd
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
-    QApplication,
     QMainWindow,
     QVBoxLayout,
     QLabel,
-    QLineEdit,
     QGraphicsScene,
     QGraphicsView,
-    QSizePolicy,
     QInputDialog,
     QFileDialog,
-    QFrame,
     QDialog,
 )
 
-from chord_hand.chord.chord import Chord
+from chord_hand.cell import CELL_WIDTH, Cell
 from chord_hand.chord.decode import (
-    parse_chord_code_sequence,
     decode,
     decode_chord_code_sequence,
 )
 from chord_hand.chord.encode import encode_measure
-from chord_hand.roman_analysis.roman_analysis import (
-    analyze_chord,
-    str_to_chord,
-    str_to_mode,
-)
+from chord_hand.crash_dialog import CrashDialog
 
 LINE_LENGTH = 4
-CELL_WIDTH = 200
-CELL_HEIGHT = 35
 FIELD_HEIGHT = 40
 
 
-class Cell:
-    class FieldType(StrEnum):
-        CHORD_SYMBOLS = auto()
-        HARMONIC_ANALYSIS = auto()
-        HARMONIC_REGION = auto()
-
-    def __init__(
-        self,
-        n,
-        on_next_measure,
-        field_types,
-        get_active_harmonic_region,
-        chord_code="",
-        analysis_code="",
-        region_code="",
-    ):
-        self.n = n
-        self.chords = []
-        self.chord_code = chord_code
-        self.analysis_code = analysis_code
-        self.region_code = region_code
-        self.on_next_measure = functools.partial(on_next_measure, self)
-        self.field_types = field_types
-
-        self._init_widgets()
-        self.proxy = None
-        self.harmonic_region = "%"
-        self.active_harmonic_region = get_active_harmonic_region
-
-    def _init_widgets(self):
-        self.layout = QVBoxLayout()
-
-        self.widget = QFrame()
-        self.widget.setLayout(self.layout)
-        self.widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.widget.setFixedSize(CELL_WIDTH, CELL_HEIGHT)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-
-        self.n_label = QLabel(str(self.n))
-        self.layout.addWidget(self.n_label, 0, Qt.AlignmentFlag.AlignHCenter)
-
-        self.n_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.n_label.setFixedHeight(20)
-
-        self.init_fields()
-
-    def init_fields(self):
-        field_type_to_init_func = {
-            self.FieldType.CHORD_SYMBOLS: self._init_chord_symbols_field,
-            self.FieldType.HARMONIC_ANALYSIS: self._init_harmonic_analysis_field,
-            self.FieldType.HARMONIC_REGION: self._init_harmonic_region_field,
-        }
-
-        for type in self.field_types:
-            field_type_to_init_func[type]()
-
-    def _init_chord_symbols_field(self):
-        self.chord_symbol_code = QLineEdit("".join(self.chord_code))
-        self.chord_symbol_code.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.chord_symbol_code.textEdited.connect(self.on_chord_symbol_code_edited)
-        self.chord_symbol_code.setSizePolicy(
-            QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed
-        )
-        self.chord_symbol_code.setFixedHeight(25)
-        self.layout.addWidget(self.chord_symbol_code, 0, Qt.AlignmentFlag.AlignHCenter)
-
-        self.chord_symbol_label = QLabel(
-            " ".join(map(str, decode_chord_code_sequence(self.chord_code)[0]))
-            if self.chord_code
-            else ""
-        )
-        self.chord_symbol_label.setSizePolicy(
-            QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed
-        )
-        self.chord_symbol_label.setFixedHeight(30)
-        self.chord_symbol_label.setFont(
-            QFont(self.chord_symbol_label.font().family(), 16)
-        )
-        self.layout.addWidget(self.chord_symbol_label, 0, Qt.AlignmentFlag.AlignHCenter)
-
-        self.change_cell_height(55)
-
-    def change_cell_height(self, amount):
-        self.widget.setFixedSize(self.widget.width(), self.widget.height() + amount)
-
-    def _init_harmonic_analysis_field(self):
-        self.harmonic_analysis_code = QLineEdit("".join(self.analysis_code))
-        self.harmonic_analysis_code.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.harmonic_analysis_code.textEdited.connect(
-            self.on_harmonic_analysis_field_edited
-        )
-        self.harmonic_analysis_code.setSizePolicy(
-            QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed
-        )
-        self.harmonic_analysis_code.setFixedHeight(25)
-        self.layout.addWidget(
-            self.harmonic_analysis_code, 0, Qt.AlignmentFlag.AlignHCenter
-        )
-
-        self.harmonic_analysis_label = QLabel(decode(self.analysis_code))
-        self.harmonic_analysis_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.harmonic_analysis_label.setFixedHeight(30)
-        self.harmonic_analysis_label.setFont(
-            QFont(self.harmonic_analysis_label.font().family(), 16)
-        )
-        self.layout.addWidget(
-            self.harmonic_analysis_label, 0, Qt.AlignmentFlag.AlignHCenter
-        )
-
-        self.change_cell_height(55)
-
-    def _init_harmonic_region_field(self):
-        self.harmonic_region_code = QLineEdit("".join(self.region_code))
-        self.harmonic_region_code.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.harmonic_region_code.textEdited.connect(
-            self.on_harmonic_region_field_edited
-        )
-        self.harmonic_region_code.setSizePolicy(
-            QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed
-        )
-        self.harmonic_region_code.setFixedHeight(25)
-        self.layout.addWidget(
-            self.harmonic_region_code, 0, Qt.AlignmentFlag.AlignHCenter
-        )
-
-        self.harmonic_region_label = QLabel(decode(self.region_code))
-        self.harmonic_region_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.harmonic_region_label.setSizePolicy(
-            QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed
-        )
-        self.harmonic_region_label.setFixedHeight(30)
-        self.harmonic_region_label.setFont(
-            QFont(self.harmonic_analysis_label.font().family(), 16)
-        )
-        self.layout.addWidget(
-            self.harmonic_region_label, 0, Qt.AlignmentFlag.AlignHCenter
-        )
-
-        self.change_cell_height(55)
-
-    def set_n(self, n):
-        self.n = n
-        self.n_label.setText(str(n))
-
-    def set_focus(self):
-        self.chord_symbol_code.selectAll()
-        self.chord_symbol_code.setFocus()
-
-    def on_chord_symbol_code_edited(self, text):
-        if text and text[-1] == " ":
-            self.chord_symbol_code.setText(text[:-1])
-            self.on_next_measure()
-            return
-        self.chord_code = text
-        try:
-            codes = parse_chord_code_sequence(text)[0]
-        except KeyError:
-            self.chords = []
-            self.chord_symbol_label.setText("ERROR")
-            self.chord_symbol_label.setToolTip("ERROR")
-            return
-
-        self.chords = list(map(decode, codes))
-        self.chord_symbol_label.setText(" ".join(list(map(str, self.chords))))
-        self.chord_symbol_label.setToolTip(self.chord_symbol_label.text())
-
-    def on_harmonic_region_field_edited(self, text):
-        if not text:
-            self.region_code = ""
-            self.harmonic_region_label.setText("")
-            return
-        if text and text[-1] == " ":
-            self.chord_symbol_code.setText(text[:-1])
-            self.on_next_measure()
-            return
-        self.harmonic_region = str_to_mode(decode(text))
-        self.harmonic_region_label.setText(decode(text))
-
-    def on_harmonic_analysis_field_edited(self, text):
-        if not text:
-            self.harmonic_analysis = ""
-            self.harmonic_analysis_label.setText("")
-            return
-        if text and text[-1] == " ":
-            self.chord_symbol_code.setText(text[:-1])
-            self.on_next_measure()
-            return
-
-        try:
-            analysis = analyze_chord(
-                str_to_chord(decode(self.chord_code)),
-                text,
-                self.active_harmonic_region(self),
-            )
-        except KeyError:
-            analysis = "?"
-
-        self.harmonic_analysis = analysis
-        self.harmonic_analysis_label.setText(analysis)
-
-    def __repr__(self):
-        return f"Cell{self.n, self.chord_code}"
-
-
 class MainWindow(QMainWindow):
-    def __init__(self, chords: [[Chord]], field_types=(Cell.FieldType.CHORD_SYMBOLS,)):
+    def __init__(self, field_types=(Cell.FieldType.CHORD_SYMBOLS,)):
         super().__init__()
-        self.chords = chords
+        self.setWindowTitle('ChordHand')
+        self.chords = [[]]
         self.field_types = field_types
+        self.chord_quality_to_symbol = {}
         self.cells = []
         self.scene = QGraphicsScene()
         self.view = QGraphicsView()
@@ -264,7 +47,7 @@ class MainWindow(QMainWindow):
 
     def init_menus(self):
         def init_file_menu(
-            name, load_from_text_func, load_from_file_func, view_as_text_func
+                name, load_from_text_func, load_from_file_func, view_as_text_func
         ):
             file_menu = self.menuBar().addMenu("File")
 
@@ -287,8 +70,11 @@ class MainWindow(QMainWindow):
             # export_csv_action = file_menu.addAction("Export as CSV...")
             # export_csv_action.triggered.connect(self.export_as_csv)
 
-            export_csv_action = file_menu.addAction("Export as Excel...")
-            export_csv_action.triggered.connect(self.export_as_xlsx_transposed)
+            export_mpb_action = file_menu.addAction("Export as ProjetoMPB CSV...")
+            export_mpb_action.triggered.connect(self.export_as_projeto_mpb)
+
+            export_tilia_action = file_menu.addAction("Export as TiLiA CSV...")
+            export_tilia_action.triggered.connect(self.export_as_tilia)
 
             file_menu.addSeparator()
 
@@ -377,6 +163,7 @@ class MainWindow(QMainWindow):
             self.remove_cell(n - 1)
 
     def on_insert(self):
+        raise Exception
         n, accept = QInputDialog().getInt(
             None,
             "Insert measure",
@@ -385,7 +172,7 @@ class MainWindow(QMainWindow):
             max=len(self.cells) + 1,
         )
         if accept:
-            self.insert_cell(n)
+            self.insert_cell(n - 1)
 
     def chord_symbols_view_as_text(self):
         dialog = QDialog()
@@ -439,8 +226,12 @@ class MainWindow(QMainWindow):
         self.add_widgets()
         self.position_widgets()
 
+    @staticmethod
+    def get_music_title():
+        return QInputDialog().getText(None, "Save", "Insert music title")
+
     def save_as_json(self):
-        name, success = QInputDialog().getText(None, "Save", "Insert music title")
+        name, success = self.get_music_title()
         if not success:
             return
 
@@ -460,7 +251,7 @@ class MainWindow(QMainWindow):
                 file,
             )
 
-    def write_to_csv(self, path):
+    def write_csv_projeto_mpb(self, path):
         with open(path, 'w', newline='', encoding='utf-8') as f:
             csv_writer = csv.writer(f)
             for i, measure in enumerate(self.get_chords()):
@@ -476,22 +267,41 @@ class MainWindow(QMainWindow):
                         str(chord),
                     ])
 
-    def get_file_save_path(self, initial, name_filter):
+    def write_csv_tilia(self, path):
+        with open(path, 'w', newline='', encoding='utf-8') as f:
+            csv_writer = csv.writer(f)
+            csv_writer.writerow(['measure', 'fraction', 'label'])
+            for i, measure in enumerate(self.get_chords()):
+                for j, chord in enumerate(measure):
+                    csv_writer.writerow([
+                        i + 1,
+                        (j / len(measure)) % 1,
+                        str(chord)
+                    ])
+
+    @staticmethod
+    def get_file_save_path(initial, name_filter):
         return QFileDialog.getSaveFileName(
             None, 'Save', initial, name_filter
         )
 
-    # def export_as_csv(self, path):
-    #    self.write_to_csv(path)
-
-    def export_as_xlsx_transposed(self):
-        path, success = self.get_file_save_path('chords_transposed' + '.xlsx', '.xlsx')
+    def export_as_projeto_mpb(self):
+        path, success = self.get_file_save_path('Untitled.csv', '*.csv')
         if not success:
             return
-        self.write_to_csv(path)
+
+        self.write_csv_projeto_mpb(path)
         pd.read_csv(path, header=None).T.to_csv(path, header=False, index=False)
 
-    def export_as_text(self):
+    def export_as_tilia(self):
+        path, success = self.get_file_save_path('Untitled.csv', '*.csv')
+        if not success:
+            return
+
+        self.write_csv_tilia(path)
+
+    @staticmethod
+    def export_as_text():
         print('Exporting as text...')
 
     def remove_cell(self, index):
@@ -512,7 +322,7 @@ class MainWindow(QMainWindow):
         self.cells.insert(index, cell)
         self.add_cell_to_scene(cell)
         for cell in self.cells[index:]:
-            cell.n += 1
+            cell.set_n(cell.n + 1)
             self.position_cell(cell)
         self.position_cell(cell)
         self.view.ensureVisible(cell.proxy)
@@ -536,16 +346,6 @@ class MainWindow(QMainWindow):
             self.position_cell(cell)
 
 
-def run(args=("",)):
-    app = QApplication(sys.argv)
-    window = MainWindow(*args)
-    try:
-        app.exec()
-    except Exception:
-        with open("dump.txt", "w") as f:
-            f.write(window.chord_symbols_view_as_text())
-
-
 def serialize_chord(chord):
     if not chord:
         return "RepeatChord()"
@@ -554,3 +354,8 @@ def serialize_chord(chord):
 
 def serialize_bar(number, bar):
     return number, [serialize_chord(chord) for chord in bar]
+
+
+def show_crash_dialog(data_dump, exc_message):
+    dialog = CrashDialog(exc_message, data_dump)
+    dialog.exec()

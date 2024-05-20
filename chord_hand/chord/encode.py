@@ -1,15 +1,15 @@
 from chord_hand.chord.chord import NoChord, RepeatChord, Chord
 from chord_hand.chord.keymap import (
-    CHORD_QUALITY_TO_CODE,
     NOTE_TO_CODE,
     NEXT_CHORD,
     REPEAT_CHORD,
     SLASH,
 )
+from chord_hand.settings import chord_quality_to_key
 
 
 def encode_chord_quality(chord):
-    return CHORD_QUALITY_TO_CODE[chord]
+    return chord_quality_to_key[chord]
 
 
 def encode_note(note):

@@ -1,15 +1,15 @@
 from chord_hand.chord.chord import Chord, RepeatChord
-from chord_hand.chord.chord_quality import ChordQuality
+from chord_hand.chord.quality import ChordQuality
 from chord_hand.chord.keymap import (
     CODE_TO_NOTE,
     NEXT_BAR,
     NEXT_CHORD,
     REPEAT_CHORD,
-    CODE_TO_CHORD_QUALITY,
     SLASH,
     TEXT_MODE,
 )
 from chord_hand.chord.note import Note
+from chord_hand.settings import key_to_chord_quality
 
 ERROR = "ERROR"
 
@@ -29,7 +29,7 @@ def decode_3_or_more_letters(code):
     if code[2] == SLASH:
         root = CODE_TO_NOTE[code[0]]
         try:
-            quality = CODE_TO_CHORD_QUALITY[code[1]]
+            quality = key_to_chord_quality[code[1]]
         except KeyError:
             quality = ChordQuality("", "", name="ERROR")
         try:
@@ -41,7 +41,7 @@ def decode_3_or_more_letters(code):
     elif code[2] == TEXT_MODE:
         root_chord = decode(code[:2])
         quality = ChordQuality(
-            "", "", name=CODE_TO_CHORD_QUALITY[code[1]].to_symbol() + code[3:]
+            "", "", name=key_to_chord_quality[code[1]].to_symbol() + code[3:]
         )
         return Chord(root_chord.root, quality)
     else:
@@ -51,7 +51,7 @@ def decode_3_or_more_letters(code):
 
 def decode_2letters(code):
     try:
-        return Chord(CODE_TO_NOTE[code[0]], CODE_TO_CHORD_QUALITY[code[1]])
+        return Chord(CODE_TO_NOTE[code[0]], key_to_chord_quality[code[1]])
     except (ValueError, KeyError, IndexError):
         print(f'Error decoding "{code}".')
         return Chord(Note(-1, 0), ChordQuality("", "", name="ERROR"))

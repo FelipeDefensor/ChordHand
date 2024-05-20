@@ -1,4 +1,4 @@
-from chord_hand.chord.chord_quality import ChordQuality
+from chord_hand.chord.quality import ChordQuality
 from chord_hand.chord.chord import NoChord
 from chord_hand.chord.note import Note
 
@@ -47,66 +47,6 @@ CODE_TO_NOTE = {
 }
 
 NOTE_TO_CODE = {v: k for k, v in CODE_TO_NOTE.items()}
-
-CODE_TO_CHORD_QUALITY = {
-    # NUMBER ROW
-    "1": ChordQuality("M", "A", "M"),
-    "!": ChordQuality("M", "p", eleventh="A", thirteenth="M"),
-    "@": ChordQuality("", "p", "m", thirteenth="M", fourth="p"),
-    "3": ChordQuality("M", "p", "M", thirteenth="M"),
-    "#": ChordQuality("M", "p", "M", ninth="M", thirteenth="M"),
-    "4": ChordQuality("M", "p", "m", thirteenth="M"),
-    "$": ChordQuality("M", "p", "m", ninth="M", thirteenth="M"),
-    "5": ChordQuality("M", "p", seventh="m", thirteenth="m"),
-    "%": ChordQuality("", "p", second="M"),
-    "6": ChordQuality("m", "p", eleventh="p"),
-    "7": ChordQuality("m", "p", "m", eleventh="p"),
-    # TOP ROW
-    "q": ChordQuality("M", "A", seventh="m"),
-    "Q": ChordQuality("M", "p", seventh="M", eleventh="A"),
-    "w": ChordQuality("M", "p", ninth="M", sixth="M"),
-    "W": ChordQuality("", "p", ninth="M", fourth="p"),
-    "e": ChordQuality("M", "p", seventh="M", ninth="M"),
-    "E": ChordQuality("M", "p", seventh="M", ninth="M", eleventh="A"),
-    "r": ChordQuality("M", "p", seventh="m", ninth="M"),
-    "R": ChordQuality("M", "p", seventh="m", ninth="M", eleventh="A"),
-    "t": ChordQuality("M", "p", ninth="M"),
-    "T": ChordQuality("M", ""),
-    "y": ChordQuality("m", "p", ninth="M"),
-    "u": ChordQuality("m", "p", seventh="m", ninth="M"),
-    "i": ChordQuality("m", "d", seventh="d"),
-    "o": ChordQuality("m", "p", ninth="M", sixth="m"),
-    # HOME ROW
-    "a": ChordQuality("M", "A"),
-    "A": ChordQuality("M", "p", "m", eleventh="A"),
-    "s": ChordQuality("M", "p", sixth="M"),
-    "S": ChordQuality("", "p", seventh="m"),
-    "d": ChordQuality("M", "p", seventh="M"),
-    "f": ChordQuality("M", "p", seventh="m"),
-    "F": ChordQuality("M", "p", seventh="m", thirteenth="m"),
-    "g": ChordQuality("M", "p"),
-    "G": ChordQuality("M", "p", seventh="m", ninth="A"),
-    "h": ChordQuality("m", "p"),
-    "H": ChordQuality("m", "p", seventh="M"),
-    "j": ChordQuality("m", "p", seventh="m"),
-    "k": ChordQuality("m", "d"),
-    "l": ChordQuality("m", "p", sixth="m"),
-    # BOTTOM ROW
-    "Z": ChordQuality("M", "p", eleventh="A"),
-    "x": ChordQuality("M", "p", ninth="m", sixth="M"),
-    "X": ChordQuality("", "p"),
-    "c": ChordQuality("M", "p", seventh="M", eleventh="A"),
-    "v": ChordQuality("M", "p", seventh="m", ninth="m"),
-    "V": ChordQuality("M", "p", seventh="m", ninth="m", thirteenth="m"),
-    "b": ChordQuality("", "p", seventh="m"),
-    "B": ChordQuality("M", "p", seventh="m", ninth="M", thirteenth="m"),
-    "n": ChordQuality("m", "p", ninth="m"),
-    "m": ChordQuality("m", "p", seventh="m", ninth="m"),
-    ",": ChordQuality("m", "d", seventh="m"),
-    "<": ChordQuality("m", "d", seventh="m", ninth="M"),
-}
-
-CHORD_QUALITY_TO_CODE = {v: k for k, v in CODE_TO_CHORD_QUALITY.items()}
 
 LETTER2_SPECIAL = {"?": "?"}
 SLASH = "z"
