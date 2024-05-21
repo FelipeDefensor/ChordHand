@@ -7,6 +7,8 @@ chord_quality_to_symbol = {}
 chord_quality_to_chordal_type = {}
 key_to_chord_quality = {}
 chord_quality_to_key = {}
+default_analyses = {}
+name_to_analytic_type = {}
 
 
 def init_chord_symbols():
@@ -49,3 +51,32 @@ def init_keymap():
             key_to_chord_quality[key] = quality
 
     chord_quality_to_key = {v: k for k, v in key_to_chord_quality.items()}
+
+
+def init_default_analyses():
+    from chord_hand.chord.quality import ChordQuality
+
+    # Should be called by main, hence 'settings' must be in the path
+    with open(Path('settings', 'default_analyses.csv'), 'r', newline='', encoding='utf-8') as f:
+        reader = csv.reader(f)
+        next(reader, None)  # skip symbol line
+        quality_strings = next(reader)[3:]
+        qualities = [ChordQuality.from_string(s) for s in quality_strings]
+        print(quality_strings)
+
+        for symbol, step, chroma, *analyses in reader:
+            analyses = ['I' if a=='' else a for a in analyses]
+            default_analyses[(int(step), int(chroma))] = dict(zip(qualities, analyses))
+
+
+def init_analytical_types():
+    from chord_hand.analysis.analysis import AnalyticType
+
+    # Should be called by main, hence 'settings' must be in the path
+    with open(Path('settings', 'analytic_types.csv'), 'r', newline='', encoding='utf-8') as f:
+        reader = csv.reader(f)
+        next(reader, None)  # skip header
+
+        name_to_analytic_type['I'] = AnalyticType('I', 0, 0)
+        for name, relative_step, relative_chroma in reader:
+            name_to_analytic_type[name] = AnalyticType(name, int(relative_step), int(relative_chroma))

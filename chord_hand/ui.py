@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import (
     QDialog,
 )
 
+from chord_hand.analysis.analysis import analyze
 from chord_hand.cell import CELL_WIDTH, Cell
 from chord_hand.chord.decode import (
     decode,
@@ -27,7 +28,7 @@ FIELD_HEIGHT = 40
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, field_types=(Cell.FieldType.CHORD_SYMBOLS,)):
+    def __init__(self, field_types=(Cell.FieldType.CHORD_SYMBOLS, Cell.FieldType.HARMONIC_REGION, Cell.FieldType.HARMONIC_ANALYSIS)):
         super().__init__()
         self.setWindowTitle('ChordHand')
         self.chords = [[]]
@@ -47,7 +48,7 @@ class MainWindow(QMainWindow):
 
     def init_menus(self):
         def init_file_menu(
-                name, load_from_text_func, load_from_file_func, view_as_text_func
+                load_from_text_func, load_from_file_func, view_as_text_func
         ):
             file_menu = self.menuBar().addMenu("File")
 
@@ -67,9 +68,6 @@ class MainWindow(QMainWindow):
             export_text_action = file_menu.addAction("Export as text...")
             export_text_action.triggered.connect(self.export_as_text)
 
-            # export_csv_action = file_menu.addAction("Export as CSV...")
-            # export_csv_action.triggered.connect(self.export_as_csv)
-
             export_mpb_action = file_menu.addAction("Export as ProjetoMPB CSV...")
             export_mpb_action.triggered.connect(self.export_as_projeto_mpb)
 
@@ -82,11 +80,16 @@ class MainWindow(QMainWindow):
             to_text_action.triggered.connect(view_as_text_func)
 
         init_file_menu(
-            "Chords",
             self.load_chord_symbols_from_text,
             self.load_chord_symbols_from_file,
             self.chord_symbols_view_as_text,
         )
+
+        analysis_menu = self.menuBar().addMenu('Analysis')
+        analyze_action = analysis_menu.addAction("Analyze")
+        analyze_action.triggered.connect(self.analyze_harmony)
+        analyze_action.setShortcut('Ctrl+Shift+A')
+
         # init_field_menu(
         #     "Analysis",
         #     self.load_chord_symbols_from_text,
@@ -163,7 +166,6 @@ class MainWindow(QMainWindow):
             self.remove_cell(n - 1)
 
     def on_insert(self):
-        raise Exception
         n, accept = QInputDialog().getInt(
             None,
             "Insert measure",
@@ -344,6 +346,26 @@ class MainWindow(QMainWindow):
     def position_widgets(self):
         for cell in self.cells:
             self.position_cell(cell)
+
+    def get_active_harmonic_regions(self):
+        harmonic_regions = []
+        previous_region = None
+        for cell in self.cells:
+            if cell.harmonic_region:
+                harmonic_regions.append(cell.harmonic_region)
+                previous_region = cell.harmonic_region
+            else:
+                harmonic_regions.append(previous_region)
+
+        return harmonic_regions
+
+    def analyze_harmony(self):
+        for cell, region in zip(self.cells, self.get_active_harmonic_regions()):
+            analyses = []
+            for chord in cell.chords:
+                analyses.append(analyze(chord, region))
+
+            cell.set_harmonic_analysis(' - '.join(analyses))
 
 
 def serialize_chord(chord):

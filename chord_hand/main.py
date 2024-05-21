@@ -19,6 +19,8 @@ def main():
     chord_hand.settings.init_chord_symbols()
     chord_hand.settings.init_chordal_type()
     chord_hand.settings.init_keymap()
+    chord_hand.settings.init_default_analyses()
+    chord_hand.settings.init_analytical_types()
 
     app = QApplication(sys.argv)
     mw = MainWindow()

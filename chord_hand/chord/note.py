@@ -26,7 +26,7 @@ class Note:
         )
 
     @classmethod
-    def from_string(self, string):
+    def from_string(cls, string):
         if len(string) == 4:
             return Note(-1, 0)
         return Note(int(string[:1]), int(string[1:]))
