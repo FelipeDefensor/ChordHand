@@ -50,6 +50,7 @@ def init_keymap():
             quality = ChordQuality.from_string(quality_string)
             key_to_chord_quality[key] = quality
 
+    global chord_quality_to_key
     chord_quality_to_key = {v: k for k, v in key_to_chord_quality.items()}
 
 
@@ -78,5 +79,5 @@ def init_analytical_types():
         next(reader, None)  # skip header
 
         name_to_analytic_type['I'] = AnalyticType('I', 0, 0)
-        for name, relative_step, relative_chroma in reader:
-            name_to_analytic_type[name] = AnalyticType(name, int(relative_step), int(relative_chroma))
+        for name, relative_step, relative_pci in reader:
+            name_to_analytic_type[name] = AnalyticType(name, int(relative_step), int(relative_pci))

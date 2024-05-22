@@ -5,8 +5,10 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QVBoxLayout, QFrame, QSizePolicy, QLabel, QLineEdit
 
+from chord_hand.chord.chord import Chord
 from chord_hand.chord.decode import decode_chord_code_sequence, decode, parse_chord_code_sequence
 from chord_hand.analysis.harmonic_region import HarmonicRegion
+from chord_hand.chord.encode import encode_measure
 
 CELL_WIDTH = 200
 CELL_HEIGHT = 35
@@ -42,6 +44,7 @@ class Cell:
         self.proxy = None
         self.harmonic_region = ""
         self.active_harmonic_region = get_active_harmonic_region
+        self.harmonic_analyses = []
 
     def _init_widgets(self):
         self.layout = QVBoxLayout()
@@ -71,14 +74,14 @@ class Cell:
             field_type_to_init_func[type]()
 
     def _init_chord_symbols_field(self):
-        self.chord_symbol_code = QLineEdit("".join(self.chord_code))
-        self.chord_symbol_code.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.chord_symbol_code.textEdited.connect(self.on_chord_symbol_code_edited)
-        self.chord_symbol_code.setSizePolicy(
+        self.chord_code_line_edit = QLineEdit("".join(self.chord_code))
+        self.chord_code_line_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.chord_code_line_edit.textEdited.connect(self.on_chord_symbol_code_edited)
+        self.chord_code_line_edit.setSizePolicy(
             QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed
         )
-        self.chord_symbol_code.setFixedHeight(self.LINE_EDIT_HEIGHT)
-        self.layout.addWidget(self.chord_symbol_code, 0, Qt.AlignmentFlag.AlignHCenter)
+        self.chord_code_line_edit.setFixedHeight(self.LINE_EDIT_HEIGHT)
+        self.layout.addWidget(self.chord_code_line_edit, 0, Qt.AlignmentFlag.AlignHCenter)
 
         self.chord_symbol_label = QLabel(
             " ".join(map(str, decode_chord_code_sequence(self.chord_code)[0]))
@@ -100,7 +103,7 @@ class Cell:
         self.widget.setFixedSize(self.widget.width(), self.widget.height() + amount)
 
     def _init_harmonic_analysis_field(self):
-        self.harmonic_analysis_line_edit = QLineEdit("".join(self.analysis_code))
+        self.harmonic_analysis_line_edit = QLabel("".join(self.analysis_code))
         self.harmonic_analysis_line_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.harmonic_analysis_line_edit.setSizePolicy(
             QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed
@@ -111,17 +114,17 @@ class Cell:
         )
 
     def _init_harmonic_region_field(self):
-        self.harmonic_region_line_edit = QLineEdit("".join(self.region_code))
-        self.harmonic_region_line_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.harmonic_region_line_edit.textEdited.connect(
+        self.harmonic_region_label = QLineEdit("".join(self.region_code))
+        self.harmonic_region_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.harmonic_region_label.textEdited.connect(
             self.on_harmonic_region_field_edited
         )
-        self.harmonic_region_line_edit.setSizePolicy(
+        self.harmonic_region_label.setSizePolicy(
             QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed
         )
-        self.harmonic_region_line_edit.setFixedHeight(self.LINE_EDIT_HEIGHT)
+        self.harmonic_region_label.setFixedHeight(self.LINE_EDIT_HEIGHT)
         self.layout.addWidget(
-            self.harmonic_region_line_edit, 0, Qt.AlignmentFlag.AlignHCenter
+            self.harmonic_region_label, 0, Qt.AlignmentFlag.AlignHCenter
         )
 
         self.change_cell_height(55)
@@ -134,13 +137,31 @@ class Cell:
         self.harmonic_analysis = value
         self.harmonic_analysis_line_edit.setText(value)
 
+    def set_chords(self, chords):
+        self.chords = chords
+        self.chord_code = encode_measure(chords)
+        self.chord_code_line_edit.setText(self.chord_code)
+        self._set_chord_symbol_label(chords)
+
+    def set_harmonic_region(self, region):
+        if not region:
+            self.harmonic_region_label.setStyleSheet('color: red')
+            self.harmonic_region = ''
+            return
+        self.harmonic_region_label.setStyleSheet('color: black')
+        self.harmonic_region = region
+
     def set_focus(self):
-        self.chord_symbol_code.selectAll()
-        self.chord_symbol_code.setFocus()
+        self.chord_code_line_edit.selectAll()
+        self.chord_code_line_edit.setFocus()
+
+    def _set_chord_symbol_label(self, chords: list[Chord]):
+        self.chord_symbol_label.setText(" ".join(list(map(str, chords))))
+        self.chord_symbol_label.setToolTip(self.chord_symbol_label.text())
 
     def on_chord_symbol_code_edited(self, text):
         if text and text[-1] == " ":
-            self.chord_symbol_code.setText(text[:-1])
+            self.chord_code_line_edit.setText(text[:-1])
             self.on_next_measure()
             return
         self.chord_code = text
@@ -153,49 +174,18 @@ class Cell:
             return
 
         self.chords = list(map(decode, codes))
-        self.chord_symbol_label.setText(" ".join(list(map(str, self.chords))))
-        self.chord_symbol_label.setToolTip(self.chord_symbol_label.text())
+        self._set_chord_symbol_label(self.chords)
 
     def on_harmonic_region_field_edited(self, text):
         if not text:
             self.region_code = ""
             return
         if text and text[-1] == " ":
-            self.chord_symbol_code.setText(text[:-1])
+            self.chord_code_line_edit.setText(text[:-1])
             self.on_next_measure()
             return
 
-        region = HarmonicRegion.from_string(text)
-        if not region:
-            self.harmonic_region_line_edit.setStyleSheet('color: red')
-            self.harmonic_region = ''
-            return
-        print(region)
-        self.harmonic_region_line_edit.setStyleSheet('color: black')
-        self.harmonic_region = region
-
-    def on_harmonic_analysis_field_edited(self, text):
-        # if not text:
-        #     self.harmonic_analysis = ""
-        #     self.harmonic_analysis_label.setText("")
-        #     return
-        # if text and text[-1] == " ":
-        #     self.chord_symbol_code.setText(text[:-1])
-        #     self.on_next_measure()
-        #     return
-        #
-        # try:
-        #     analysis = analyze_chord(
-        #         str_to_chord(decode(self.chord_code)),
-        #         text,
-        #         self.active_harmonic_region(self),
-        #     )
-        # except KeyError:
-        #     analysis = "?"
-        #
-        # self.harmonic_analysis = analysis
-        # self.harmonic_analysis_label.setText(analysis)
-        pass
+        self.set_harmonic_region(HarmonicRegion.from_string(text))
 
     def __repr__(self):
         return f"Cell{self.n, self.chord_code}"

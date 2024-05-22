@@ -28,6 +28,21 @@ class Chord:
     def to_string(self):
         return f"Chord({self.root.to_string()}, {self.quality.to_string()}, {self.bass.to_string()})"
 
+    def to_dict(self):
+        return {
+            'root': self.root.to_dict(),
+            'quality': self.quality.to_dict(),
+            'bass': self.bass.to_dict(),
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return Chord(
+            root=Note(**data['root']),
+            quality=ChordQuality(**data['quality']),
+            bass=Note(**data['bass'])
+        )
+
 
 class NoChord:
     def __str__(self):

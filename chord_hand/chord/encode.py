@@ -5,10 +5,11 @@ from chord_hand.chord.keymap import (
     REPEAT_CHORD,
     SLASH,
 )
-from chord_hand.settings import chord_quality_to_key
 
 
 def encode_chord_quality(chord):
+    from chord_hand.settings import chord_quality_to_key
+
     return chord_quality_to_key[chord]
 
 

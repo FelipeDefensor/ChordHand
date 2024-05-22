@@ -15,12 +15,16 @@ from PyQt6.QtWidgets import (
 )
 
 from chord_hand.analysis.analysis import analyze
+from chord_hand.analysis.harmonic_region import HarmonicRegion
 from chord_hand.cell import CELL_WIDTH, Cell
+from chord_hand.chord.chord import Chord
 from chord_hand.chord.decode import (
     decode,
     decode_chord_code_sequence,
 )
 from chord_hand.chord.encode import encode_measure
+from chord_hand.chord.note import Note
+from chord_hand.chord.quality import ChordQuality
 from chord_hand.crash_dialog import CrashDialog
 
 LINE_LENGTH = 4
@@ -28,7 +32,8 @@ FIELD_HEIGHT = 40
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, field_types=(Cell.FieldType.CHORD_SYMBOLS, Cell.FieldType.HARMONIC_REGION, Cell.FieldType.HARMONIC_ANALYSIS)):
+    def __init__(self, field_types=(
+            Cell.FieldType.CHORD_SYMBOLS, Cell.FieldType.HARMONIC_REGION, Cell.FieldType.HARMONIC_ANALYSIS)):
         super().__init__()
         self.setWindowTitle('ChordHand')
         self.chords = [[]]
@@ -81,7 +86,7 @@ class MainWindow(QMainWindow):
 
         init_file_menu(
             self.load_chord_symbols_from_text,
-            self.load_chord_symbols_from_file,
+            self.load_json_file,
             self.chord_symbols_view_as_text,
         )
 
@@ -194,6 +199,9 @@ class MainWindow(QMainWindow):
     def get_chords(self):
         return decode_chord_code_sequence(self.get_chord_codes())
 
+    def get_harmonic_regions(self):
+        return [cell.harmonic_region for cell in self.cells]
+
     def get_decoded_chords(self):
         return list(map(decode, chord) for chord in self.chords)
 
@@ -201,32 +209,50 @@ class MainWindow(QMainWindow):
         return [list(map(str, measure)) for measure in self.get_chords()]
 
     def get_serialized_chords(self):
-        sr = [serialize_bar(i, bar) for i, bar in enumerate(self.get_chords())]
-        return sr
+        return {i: serialize_chord_measure(bar) for i, bar in enumerate(self.get_chords())}
 
-    def get_file_data(self):
+    def get_serialized_harmonic_regions(self):
+        return {i: serialize_harmonic_region(region) for i, region in enumerate(self.get_harmonic_regions())}
+
+    @staticmethod
+    def get_file_data():
         file_name, _ = QFileDialog().getOpenFileName(filter="*.json")
         if file_name:
             with open(file_name) as f:
                 data = json.load(f)
             return data
 
-    def load_chord_symbols_from_file(self):
+    def load_cells(self, amount):
+        for _ in range(amount):
+            self.insert_cell(len(self.cells))
+
+    def load_json_file(self):
         data = self.get_file_data()
         if data:
-            self.load_chord_symbols(data["string"])
+            self.clear()
+            self.load_cells(len(data['chords']))
+            self.load_chords(data["chords"])
+            self.load_harmonic_regions(data["regions"])
 
     def load_chord_symbols_from_text(self):
         result, success = QInputDialog().getMultiLineText(None, "Load text", "")
         if success:
-            self.load_chord_symbols(result)
+            self.load_chord_codes(result)
 
-    def load_chord_symbols(self, text):
+    def load_chord_codes(self, text):
         self.clear()
         self.chords = decode_chord_code_sequence(text)
         self.init_cells()
         self.add_widgets()
         self.position_widgets()
+
+    def load_chords(self, chords_data):
+        for n, measure_data in chords_data.items():
+            self.cells[int(n)].set_chords(list(map(Chord.from_dict, measure_data)))
+
+    def load_harmonic_regions(self, regions_data):
+        for n, region_data in regions_data.items():
+            self.cells[int(n)].set_harmonic_region(list(map(HarmonicRegion.from_dict, region_data)))
 
     @staticmethod
     def get_music_title():
@@ -247,8 +273,8 @@ class MainWindow(QMainWindow):
             json.dump(
                 {
                     "title": name,
-                    "chords_encoded": self.get_chord_codes(),
-                    "chords_decoded": self.get_serialized_chords(),
+                    "chords": self.get_serialized_chords(),
+                    "regions": self.get_serialized_harmonic_regions(),
                 },
                 file,
             )
@@ -371,11 +397,15 @@ class MainWindow(QMainWindow):
 def serialize_chord(chord):
     if not chord:
         return "RepeatChord()"
-    return chord.to_string()
+    return chord.to_dict()
 
 
-def serialize_bar(number, bar):
-    return number, [serialize_chord(chord) for chord in bar]
+def serialize_harmonic_region(region):
+    return region.to_dict() if region else None
+
+
+def serialize_chord_measure(measure):
+    return [serialize_chord(chord) for chord in measure]
 
 
 def show_crash_dialog(data_dump, exc_message):

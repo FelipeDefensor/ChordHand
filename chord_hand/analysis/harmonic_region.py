@@ -37,3 +37,16 @@ class HarmonicRegion:
             modality = Modality.MAJOR
 
         return HarmonicRegion(tonic, modality)
+
+    def to_dict(self):
+        return {
+            'tonic': self.tonic.to_dict(),
+            'modality': self.modality.value
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return HarmonicRegion(
+            tonic=Note.from_dict(data['tonic']),
+            modality=Modality(data['modality'])
+        )

@@ -71,3 +71,7 @@ class ChordQuality:
 
     def to_chordal_type(self):
         return chord_hand.settings.chord_quality_to_chordal_type[self]
+
+    def to_dict(self):
+        return self.__dict__
+

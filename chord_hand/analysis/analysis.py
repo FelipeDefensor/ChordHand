@@ -11,7 +11,7 @@ from chord_hand.settings import default_analyses, name_to_analytic_type
 class AnalyticType:
     name: str
     relative_step: int
-    relative_chroma: int
+    relative_pci: int
 
 
 @dataclass
@@ -78,10 +78,10 @@ def analyze(chord, region):
     analytic_type = name_to_analytic_type[default_analyses[(chord_step, chord_chroma)][chord.quality]]
     target_step = (chord_step + analytic_type.relative_step) % 7
     target_pc = Note(target_step, 0).to_pitch_class()
-    target_chroma = chord_pc - target_pc + analytic_type.relative_step
+    target_chroma = ((chord_pc - target_pc) % 12 + analytic_type.relative_pci) % 12
     if analytic_type.name == 'I': # diatonic case
         return CHROMA_TO_SIGN[target_chroma] + STEP_TO_ROMAN[target_step] + chord.quality.to_symbol()
-    else: # other analytic types
+    else:  # other analytic types
         suffix = '/' + CHROMA_TO_SIGN[target_chroma] + STEP_TO_ROMAN[target_step] if target_step else ''
         return analytic_type.name + chord.quality.to_symbol() + suffix
 

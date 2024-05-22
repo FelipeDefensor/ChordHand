@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 STEP_TO_NAME = {-1: "X", 0: "C", 1: "D", 2: "E", 3: "F", 4: "G", 5: "A", 6: "B"}
-STEP_TO_PITCH_CLASS = {0:0, 1:2, 2:4, 3:5, 4:7, 5:9, 6:11}
+STEP_TO_PITCH_CLASS = {0: 0, 1: 2, 2: 4, 3: 5, 4: 7, 5: 9, 6: 11}
 
 CHROMA_TO_SIGN = {
     -2: "ꞵ",
@@ -36,3 +36,13 @@ class Note:
 
     def __hash__(self):
         return hash(self.to_string())
+
+    def to_dict(self):
+        return {
+            'step': self.step,
+            'chroma': self.chroma
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return Note(int(data['step']), int(data['int']))
