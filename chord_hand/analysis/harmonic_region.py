@@ -15,8 +15,11 @@ class HarmonicRegion:
     tonic: Note
     modality: Modality
 
-    def __str__(self):
-        return f'{STEP_TO_NOTE_NAME[self.tonic.step]}{CHROMA_TO_SIGN[self.tonic.chroma]} {self.modality.value}'
+    def to_symbol(self):
+        step = STEP_TO_NOTE_NAME[self.tonic.step]
+        accidental = CHROMA_TO_SIGN[self.tonic.chroma] if self.tonic.chroma else ''
+        modality = 'm' if self.modality == Modality.MINOR else ''
+        return step + accidental + modality
 
     @classmethod
     def from_string(cls, s):

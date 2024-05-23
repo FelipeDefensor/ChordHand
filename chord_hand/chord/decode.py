@@ -38,12 +38,12 @@ def decode_3_or_more_letters(code):
             bass = Note(-1, 0)
         result = Chord(root, quality, bass)
         return result
-    elif code[2] == TEXT_MODE:
-        root_chord = decode(code[:2])
+    elif code[1] == TEXT_MODE:
+        root = decode(code[0])
         quality = ChordQuality(
-            "", "", name=key_to_chord_quality[code[1]].to_symbol() + code[3:]
+            "", "", name=code[2:]
         )
-        return Chord(root_chord.root, quality)
+        return Chord(root, quality)
     else:
         print(f'Error decoding "{code}": 3rd char is not a valid special char.')
         return Chord(Note(-1, 0), ChordQuality("", "", name="ERROR"))

@@ -144,6 +144,7 @@ class Cell:
         self._set_chord_symbol_label(chords)
 
     def set_harmonic_region(self, region):
+        self.harmonic_region_label.setText(region.to_symbol())
         if not region:
             self.harmonic_region_label.setStyleSheet('color: red')
             self.harmonic_region = ''

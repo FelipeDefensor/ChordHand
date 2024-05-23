@@ -45,4 +45,4 @@ class Note:
 
     @classmethod
     def from_dict(cls, data):
-        return Note(int(data['step']), int(data['int']))
+        return Note(int(data['step']), int(data['chroma']))

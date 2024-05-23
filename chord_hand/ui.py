@@ -252,7 +252,9 @@ class MainWindow(QMainWindow):
 
     def load_harmonic_regions(self, regions_data):
         for n, region_data in regions_data.items():
-            self.cells[int(n)].set_harmonic_region(list(map(HarmonicRegion.from_dict, region_data)))
+            if not region_data:
+                continue
+            self.cells[int(n)].set_harmonic_region(HarmonicRegion.from_dict(region_data))
 
     @staticmethod
     def get_music_title():

@@ -1,4 +1,5 @@
 quality,symbol
+ChordQuality(_p____M__),2
 ChordQuality(_______p_),4
 ChordQuality(__m____p_),4.7
 ChordQuality(__mM___p_),4.7.9
@@ -7,6 +8,7 @@ ChordQuality(M________),omit5
 ChordQuality(MA_______),(#5)
 ChordQuality(MAm______),(#5)7
 ChordQuality(MAM______),(#5)M7
+ChordQuality(MA_m_____),(#5)b9
 ChordQuality(Mp_______),
 ChordQuality(Mp_M_____),.9
 ChordQuality(Mp__AM___),#11.13
@@ -14,6 +16,7 @@ ChordQuality(MpM______),M7
 ChordQuality(MpMM_____),M7.9
 ChordQuality(MpM__M___),M7.13
 ChordQuality(MpMMA____),M7.9.#11
+ChordQuality(MpMM_M___),M7.9.13
 ChordQuality(MpM_A____),M7.#11
 ChordQuality(Mpm______),7
 ChordQuality(MpmM_____),7.9
@@ -23,6 +26,7 @@ ChordQuality(MpmM_m___),7.9.b13
 ChordQuality(MpmM_M___),7.9.13
 ChordQuality(Mpmm_____),7.b9
 ChordQuality(Mpmm_m___),7.b9.b13
+ChordQuality(Mpmm_M___),7.b9.13
 ChordQuality(Mpm_p____),7.11
 ChordQuality(Mpm__M___),7.13
 ChordQuality(Mpm__m___),7.b13
@@ -46,3 +50,4 @@ ChordQuality(mp______m),m6
 ChordQuality(mp_M____m),m6.9
 ChordQuality(mp__p____),m.11
 ChordQuality(Mpm_A____),7.#11
+ChordQuality(_________),???
