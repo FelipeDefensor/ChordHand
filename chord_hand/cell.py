@@ -3,8 +3,9 @@ from enum import StrEnum, auto
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import QVBoxLayout, QFrame, QSizePolicy, QLabel, QLineEdit
+from PyQt6.QtWidgets import QVBoxLayout, QFrame, QSizePolicy, QLabel, QLineEdit, QHBoxLayout, QComboBox
 
+import chord_hand.settings
 from chord_hand.chord.chord import Chord
 from chord_hand.chord.decode import decode_chord_code_sequence, decode, parse_chord_code_sequence
 from chord_hand.analysis.harmonic_region import HarmonicRegion
@@ -21,6 +22,7 @@ class Cell:
         CHORD_SYMBOLS = auto()
         HARMONIC_ANALYSIS = auto()
         HARMONIC_REGION = auto()
+        ANALYTICAL_TYPE = auto()
 
     def __init__(
             self,
@@ -68,10 +70,14 @@ class Cell:
             self.FieldType.CHORD_SYMBOLS: self._init_chord_symbols_field,
             self.FieldType.HARMONIC_ANALYSIS: self._init_harmonic_analysis_field,
             self.FieldType.HARMONIC_REGION: self._init_harmonic_region_field,
+            self.FieldType.ANALYTICAL_TYPE: self._init_analytical_type_field,
         }
 
         for type in self.field_types:
             field_type_to_init_func[type]()
+
+    def change_cell_height(self, amount):
+        self.widget.setFixedSize(self.widget.width(), self.widget.height() + amount)
 
     def _init_chord_symbols_field(self):
         self.chord_code_line_edit = QLineEdit("".join(self.chord_code))
@@ -99,18 +105,17 @@ class Cell:
 
         self.change_cell_height(55)
 
-    def change_cell_height(self, amount):
-        self.widget.setFixedSize(self.widget.width(), self.widget.height() + amount)
-
     def _init_harmonic_analysis_field(self):
+        self.harmonic_analysis_layout = QHBoxLayout()
+        self.layout.addLayout(self.harmonic_analysis_layout)
         self.harmonic_analysis_line_edit = QLabel("".join(self.analysis_code))
         self.harmonic_analysis_line_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.harmonic_analysis_line_edit.setSizePolicy(
             QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed
         )
         self.harmonic_analysis_line_edit.setFixedHeight(self.LINE_EDIT_HEIGHT)
-        self.layout.addWidget(
-            self.harmonic_analysis_line_edit, 0, Qt.AlignmentFlag.AlignHCenter
+        self.harmonic_analysis_layout.addWidget(
+            self.harmonic_analysis_line_edit, 3, Qt.AlignmentFlag.AlignHCenter
         )
 
     def _init_harmonic_region_field(self):
@@ -128,6 +133,13 @@ class Cell:
         )
 
         self.change_cell_height(55)
+
+    def _init_analytical_type_field(self):
+        print('Analytical type field.')
+        self.analytical_type_combobox = QComboBox()
+        for name, analytic_type in chord_hand.settings.name_to_analytic_type.items():
+            self.analytical_type_combobox.addItem(name, analytic_type)
+        self.harmonic_analysis_layout.addWidget(self.analytical_type_combobox, 1)
 
     def set_n(self, n):
         self.n = n

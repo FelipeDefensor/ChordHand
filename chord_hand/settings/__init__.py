@@ -58,7 +58,7 @@ def init_default_analyses():
     from chord_hand.chord.quality import ChordQuality
 
     # Should be called by main, hence 'settings' must be in the path
-    with open(Path('settings', 'default_analyses.csv'), 'r', newline='', encoding='utf-8') as f:
+    with open(Path('settings', 'default_analyses_major.csv'), 'r', newline='', encoding='utf-8') as f:
         reader = csv.reader(f)
         next(reader, None)  # skip symbol line
         quality_strings = next(reader)[3:]

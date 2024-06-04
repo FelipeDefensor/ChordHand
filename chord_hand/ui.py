@@ -33,7 +33,7 @@ FIELD_HEIGHT = 40
 
 class MainWindow(QMainWindow):
     def __init__(self, field_types=(
-            Cell.FieldType.CHORD_SYMBOLS, Cell.FieldType.HARMONIC_REGION, Cell.FieldType.HARMONIC_ANALYSIS)):
+            Cell.FieldType.CHORD_SYMBOLS, Cell.FieldType.HARMONIC_REGION, Cell.FieldType.HARMONIC_ANALYSIS, Cell.FieldType.ANALYTICAL_TYPE)):
         super().__init__()
         self.setWindowTitle('ChordHand')
         self.chords = [[]]
