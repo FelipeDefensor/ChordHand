@@ -2,9 +2,9 @@ from chord_hand.chord.chord import Chord, RepeatChord
 from chord_hand.chord.quality import ChordQuality
 from chord_hand.chord.keymap import (
     CODE_TO_NOTE,
-    NEXT_BAR,
-    NEXT_CHORD,
-    REPEAT_CHORD,
+    NEXT_BAR_CODE,
+    NEXT_CHORD_CODE,
+    REPEAT_CHORD_CODE,
     SLASH,
     TEXT_MODE,
 )
@@ -15,7 +15,7 @@ ERROR = "ERROR"
 
 
 def decode_1letter(code):
-    if code == REPEAT_CHORD:
+    if code == REPEAT_CHORD_CODE:
         return RepeatChord()
     if code in CODE_TO_NOTE:
         try:
@@ -23,6 +23,14 @@ def decode_1letter(code):
         except (ValueError, KeyError, IndexError):
             print(f'Error decoding "{code}".')
             return Note(-1, 0)
+
+def decode_3letters(code):
+    root = decode_1letter(code[0])
+    quality = key_to_chord_quality[code[1]]
+    bass = decode_1letter(code[2])
+    return Chord(root, quality, bass)
+
+
 
 
 def decode_3_or_more_letters(code):
@@ -64,41 +72,48 @@ def decode(code):
         return decode_1letter(code)
     elif len(code) == 2:
         return decode_2letters(code)
+    elif len(code) == 3:
+        return decode_3letters(code)
     else:
-        return decode_3_or_more_letters(code)
+        return list(map(decode, split_code_into_chords(code)))
 
 
-def parse_chord_code_sequence(code_sequence):
-    code = ""
-    measure = []
-    measures = []
-    for char in code_sequence:
-        code += char
-        if char == NEXT_BAR:
-            if code[:-1]:  # REPEAT_CHORD at end of measure
-                measure.append(code[:-1])
-            code = ""
-            measures.append(measure)
-            measure = []
-        elif char == NEXT_CHORD:
-            measure.append(code[:-1])
-            code = ""
-        elif char == REPEAT_CHORD:
-            if (
-                code != REPEAT_CHORD
-            ):  # REPEAT_CHORD at start of measure, or consecutive REPEAT_CHORD
-                measure.append(code[:-1])
-            measure.append(REPEAT_CHORD)
-            code = ""
-    if code:
-        measure.append(code)
-    measures.append(measure)
-    return measures
+def split_code_into_measures(code):
+    return code.split(NEXT_BAR_CODE)
+
+
+def split_code_into_chords(code):
+    rest = list(code)
+    result = []
+
+    while rest:
+        if rest[0] == REPEAT_CHORD_CODE:
+            result.append(rest.pop(0))
+            continue
+
+        root_code = rest.pop(0)
+        quality_code = rest.pop(0) if rest else ''
+        if not rest:
+            result.append(root_code + quality_code)
+            break
+        if rest[0] == SLASH:
+            rest.pop(0)  # ignore the slash
+            bass_code = rest.pop(0) if rest else ''
+            result.append(root_code + quality_code + bass_code)
+        else:
+            result.append(root_code + quality_code)
+
+    return result
+
+
+def parse_multimeasure_code(code):
+    measures = split_code_into_measures(code)
+    return list(map(split_code_into_chords, measures))
 
 
 def decode_chord_code_sequence(text):
     text = text.replace("\n", "")
-    parsed_codes = parse_chord_code_sequence(text)
+    parsed_codes = parse_multimeasure_code(text)
     decoded_measures = [list(map(decode, bar)) for bar in parsed_codes]
     for i, measure in enumerate(decoded_measures):
         for j, chord in enumerate(measure):

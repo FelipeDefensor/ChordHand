@@ -49,9 +49,9 @@ CODE_TO_NOTE = {
 NOTE_TO_CODE = {v: k for k, v in CODE_TO_NOTE.items()}
 
 LETTER2_SPECIAL = {"?": "?"}
-SLASH = "z"
+SLASH = "/"
 TEXT_MODE = "0"
 
-NEXT_BAR = " "
-REPEAT_CHORD = "p"
-NEXT_CHORD = "ç"
+NEXT_BAR_CODE = " "
+REPEAT_CHORD_CODE = "p"
+NEXT_CHORD_CODE = "ç"

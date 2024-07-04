@@ -3,6 +3,7 @@ import json
 
 import pandas as pd
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QMainWindow,
     QVBoxLayout,
@@ -23,8 +24,6 @@ from chord_hand.chord.decode import (
     decode_chord_code_sequence,
 )
 from chord_hand.chord.encode import encode_measure
-from chord_hand.chord.note import Note
-from chord_hand.chord.quality import ChordQuality
 from chord_hand.crash_dialog import CrashDialog
 
 LINE_LENGTH = 4
@@ -35,12 +34,14 @@ class MainWindow(QMainWindow):
     def __init__(self, field_types=(
             Cell.FieldType.CHORD_SYMBOLS, Cell.FieldType.HARMONIC_REGION, Cell.FieldType.HARMONIC_ANALYSIS, Cell.FieldType.ANALYTICAL_TYPE)):
         super().__init__()
+        self.resize(800, 240)
         self.setWindowTitle('ChordHand')
         self.chords = [[]]
         self.field_types = field_types
         self.chord_quality_to_symbol = {}
         self.cells = []
         self.scene = QGraphicsScene()
+        self.scene.setBackgroundBrush(QColor('#f0f0f0'))
         self.view = QGraphicsView()
         self.view.setScene(self.scene)
         self.setCentralWidget(self.view)
@@ -140,11 +141,17 @@ class MainWindow(QMainWindow):
                 )
             )
 
+    def resize_to_fit_cells(self):
+        width = min(max(self.scene.width() + 20, self.width()), 800)
+        height = min(max(self.scene.height() + 80, self.height()), 800)
+        self.resize(int(width), int(height))
+
     def on_next_measure(self, cell):
         next_index = self.cells.index(cell) + 1
         if next_index == len(self.cells):
             self.insert_cell(len(self.cells))
         self.cells[next_index].set_focus()
+        self.resize_to_fit_cells()
 
     def get_active_harmonic_region(self, cell):
         if cell.region_code != "":
@@ -356,6 +363,7 @@ class MainWindow(QMainWindow):
             self.position_cell(cell)
         self.position_cell(cell)
         self.view.ensureVisible(cell.proxy)
+        cell.proxy.setZValue(-cell.n)
 
     def add_cell_to_scene(self, cell):
         cell.proxy = self.scene.addWidget(cell.widget)
@@ -374,6 +382,7 @@ class MainWindow(QMainWindow):
     def position_widgets(self):
         for cell in self.cells:
             self.position_cell(cell)
+            cell.proxy.setZValue(-cell.n)
 
     def get_active_harmonic_regions(self):
         harmonic_regions = []

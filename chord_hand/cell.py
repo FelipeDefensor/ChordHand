@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import QVBoxLayout, QFrame, QSizePolicy, QLabel, QLineEdit,
 
 import chord_hand.settings
 from chord_hand.chord.chord import Chord
-from chord_hand.chord.decode import decode_chord_code_sequence, decode, parse_chord_code_sequence
+from chord_hand.chord.decode import decode_chord_code_sequence, decode, parse_multimeasure_code
 from chord_hand.analysis.harmonic_region import HarmonicRegion
 from chord_hand.chord.encode import encode_measure
 
@@ -107,6 +107,7 @@ class Cell:
 
     def _init_harmonic_analysis_field(self):
         self.harmonic_analysis_layout = QHBoxLayout()
+        self.harmonic_analysis_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout.addLayout(self.harmonic_analysis_layout)
         self.harmonic_analysis_line_edit = QLabel("".join(self.analysis_code))
         self.harmonic_analysis_line_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -135,11 +136,10 @@ class Cell:
         self.change_cell_height(55)
 
     def _init_analytical_type_field(self):
-        print('Analytical type field.')
         self.analytical_type_combobox = QComboBox()
         for name, analytic_type in chord_hand.settings.name_to_analytic_type.items():
             self.analytical_type_combobox.addItem(name, analytic_type)
-        self.harmonic_analysis_layout.addWidget(self.analytical_type_combobox, 1)
+        self.harmonic_analysis_layout.addWidget(self.analytical_type_combobox, 1, Qt.AlignmentFlag.AlignHCenter)
 
     def set_n(self, n):
         self.n = n
@@ -179,7 +179,7 @@ class Cell:
             return
         self.chord_code = text
         try:
-            codes = parse_chord_code_sequence(text)[0]
+            codes = parse_multimeasure_code(text)[0]
         except KeyError:
             self.chords = []
             self.chord_symbol_label.setText("ERROR")

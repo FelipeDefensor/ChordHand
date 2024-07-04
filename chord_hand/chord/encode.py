@@ -1,8 +1,8 @@
 from chord_hand.chord.chord import NoChord, RepeatChord, Chord
 from chord_hand.chord.keymap import (
     NOTE_TO_CODE,
-    NEXT_CHORD,
-    REPEAT_CHORD,
+    NEXT_CHORD_CODE,
+    REPEAT_CHORD_CODE,
     SLASH,
 )
 
@@ -39,15 +39,15 @@ def encode_measure(measure: [Chord | NoChord | RepeatChord]):
     result = (
         encode_chord(measure[0])
         if not isinstance(measure[0], RepeatChord)
-        else REPEAT_CHORD
+        else REPEAT_CHORD_CODE
     )
     for chord in measure[1:]:
         if isinstance(chord, Chord) or isinstance(chord, NoChord):
-            if not result[-1] == REPEAT_CHORD:
-                result += NEXT_CHORD
+            if not result[-1] == REPEAT_CHORD_CODE:
+                result += NEXT_CHORD_CODE
             result += encode_chord(chord)
         elif isinstance(chord, RepeatChord):
-            result += REPEAT_CHORD
+            result += REPEAT_CHORD_CODE
         else:
             raise ValueError("Unrecognized chord class.")
 
