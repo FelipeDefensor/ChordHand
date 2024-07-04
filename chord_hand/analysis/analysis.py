@@ -77,9 +77,9 @@ def analyze(chord, region):
     chord_pc = chord.root.to_pitch_class()
     analytic_type = name_to_analytic_type[default_analyses[(chord_step, chord_chroma)][chord.quality]]
     target_step = (chord_step + analytic_type.relative_step) % 7
-    target_pc = Note(target_step, 0).to_pitch_class()
+    target_pc = Note((target_step + region.tonic.step) % 7, 0).to_pitch_class()
     target_chroma = ((chord_pc - target_pc) % 12 + analytic_type.relative_pci) % 12
-    if analytic_type.name == 'I': # diatonic case
+    if analytic_type.name == 'I':  # diatonic case
         return CHROMA_TO_SIGN[target_chroma] + STEP_TO_ROMAN[target_step] + chord.quality.to_symbol()
     else:  # other analytic types
         suffix = '/' + CHROMA_TO_SIGN[target_chroma] + STEP_TO_ROMAN[target_step] if target_step else ''
