@@ -15,7 +15,6 @@ from PyQt6.QtWidgets import (
     QDialog,
 )
 
-from chord_hand.analysis.analysis import analyze
 from chord_hand.analysis.harmonic_region import HarmonicRegion
 from chord_hand.cell import CELL_WIDTH, Cell
 from chord_hand.chord.chord import Chord
@@ -93,7 +92,7 @@ class MainWindow(QMainWindow):
 
         analysis_menu = self.menuBar().addMenu('Analysis')
         analyze_action = analysis_menu.addAction("Analyze")
-        analyze_action.triggered.connect(self.analyze_harmony)
+        analyze_action.triggered.connect(self.analyze_harmonies)
         analyze_action.setShortcut('Ctrl+Shift+A')
 
         # init_field_menu(
@@ -154,8 +153,10 @@ class MainWindow(QMainWindow):
         self.resize_to_fit_cells()
 
     def get_active_harmonic_region(self, cell):
-        if cell.region_code != "":
-            return cell.region_code
+        if cell.region_code:
+            return HarmonicRegion.from_string(cell.region_code)
+        elif self.cells.index(cell) == 0:
+            return None
         else:
             return self.get_active_harmonic_region(
                 self.cells[self.cells.index(cell) - 1]
@@ -207,7 +208,7 @@ class MainWindow(QMainWindow):
         return decode_chord_code_sequence(self.get_chord_codes())
 
     def get_harmonic_regions(self):
-        return [cell.harmonic_region for cell in self.cells]
+        return [cell.region for cell in self.cells]
 
     def get_decoded_chords(self):
         return list(map(decode, chord) for chord in self.chords)
@@ -261,7 +262,7 @@ class MainWindow(QMainWindow):
         for n, region_data in regions_data.items():
             if not region_data:
                 continue
-            self.cells[int(n)].set_harmonic_region(HarmonicRegion.from_dict(region_data))
+            self.cells[int(n)].set_region(HarmonicRegion.from_dict(region_data))
 
     @staticmethod
     def get_music_title():
@@ -388,21 +389,17 @@ class MainWindow(QMainWindow):
         harmonic_regions = []
         previous_region = None
         for cell in self.cells:
-            if cell.harmonic_region:
-                harmonic_regions.append(cell.harmonic_region)
-                previous_region = cell.harmonic_region
+            if cell.region:
+                harmonic_regions.append(cell.region)
+                previous_region = cell.region
             else:
                 harmonic_regions.append(previous_region)
 
         return harmonic_regions
 
-    def analyze_harmony(self):
-        for cell, region in zip(self.cells, self.get_active_harmonic_regions()):
-            analyses = []
-            for chord in cell.chords:
-                analyses.append(analyze(chord, region))
-
-            cell.set_harmonic_analysis(' - '.join(analyses))
+    def analyze_harmonies(self):
+        for cell in self.cells:
+            cell.analyze_harmonies()
 
 
 def serialize_chord(chord):

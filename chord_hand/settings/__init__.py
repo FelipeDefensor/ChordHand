@@ -63,7 +63,6 @@ def init_default_analyses():
         next(reader, None)  # skip symbol line
         quality_strings = next(reader)[3:]
         qualities = [ChordQuality.from_string(s) for s in quality_strings]
-        print(quality_strings)
 
         for symbol, step, chroma, *analyses in reader:
             analyses = ['I' if a=='' else a for a in analyses]
@@ -71,7 +70,7 @@ def init_default_analyses():
 
 
 def init_analytical_types():
-    from chord_hand.analysis.analysis import AnalyticType
+    from chord_hand.analysis import AnalyticType
 
     # Should be called by main, hence 'settings' must be in the path
     with open(Path('settings', 'analytic_types.csv'), 'r', newline='', encoding='utf-8') as f:

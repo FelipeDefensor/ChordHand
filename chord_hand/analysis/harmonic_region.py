@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import StrEnum, auto
 
 from chord_hand.chord.note import Note, CHROMA_TO_SIGN
-from chord_hand.analysis.analysis import str_to_note, STEP_TO_NOTE_NAME
+from chord_hand.analysis import STEP_TO_NOTE_NAME, str_to_note
 
 
 class Modality(StrEnum):
@@ -23,7 +23,7 @@ class HarmonicRegion:
 
     @classmethod
     def from_string(cls, s):
-        if len(s) > 1 and s[1] not in list(CHROMA_TO_SIGN.values()) + ['m', 'M']: # invalid second letter
+        if len(s) > 1 and s[1] not in list(CHROMA_TO_SIGN.values()) + ['m', 'M']:  # invalid second letter
             return None
 
         try:
