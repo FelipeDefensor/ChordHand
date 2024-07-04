@@ -11,8 +11,8 @@ from chord_hand.chord.decode import decode_chord_code_sequence, decode, parse_mu
 from chord_hand.analysis.harmonic_region import HarmonicRegion
 from chord_hand.chord.encode import encode_measure
 
-CELL_WIDTH = 200
-CELL_HEIGHT = 35
+CELL_WIDTH = 150
+CELL_HEIGHT = 140
 
 
 class Cell:
@@ -52,7 +52,7 @@ class Cell:
         self.layout = QGridLayout()
 
         self.widget = QFrame()
-        self.widget.setStyleSheet("background-color: #fff;")
+        self.widget.setFixedHeight(CELL_HEIGHT)
         self.widget.setLayout(self.layout)
         self.widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.widget.setFixedSize(CELL_WIDTH, CELL_HEIGHT)
@@ -98,8 +98,6 @@ class Cell:
         )
         self.layout.addWidget(self.chord_symbol_label, 2, 0, 1, 2, Qt.AlignmentFlag.AlignHCenter)
 
-        self.change_cell_height(55)
-
     def _init_harmonic_region_field(self):
         self.harmonic_region_label = QLineEdit("".join(self.region_code))
         self.harmonic_region_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -111,16 +109,14 @@ class Cell:
             self.harmonic_region_label, 3, 0, 1, 2, Qt.AlignmentFlag.AlignHCenter
         )
 
-        self.change_cell_height(55)
-
     def _init_harmonic_analysis_field(self):
-        self.harmonic_analysis_line_edit = QLabel("".join(self.analysis_code))
-        self.harmonic_analysis_line_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.harmonic_analysis_line_edit.setFixedHeight(self.LINE_EDIT_HEIGHT)
+        self.harmonic_analysis_label = QLabel("".join(self.analysis_code))
+        self.harmonic_analysis_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.harmonic_analysis_label.setFixedHeight(self.LINE_EDIT_HEIGHT)
         self.layout.addWidget(
-            self.harmonic_analysis_line_edit, 4, 0, Qt.AlignmentFlag.AlignHCenter
+            self.harmonic_analysis_label, 4, 0, Qt.AlignmentFlag.AlignHCenter
         )
-        self.harmonic_analysis_line_edit.setStyleSheet("background-color: red")
+        self.harmonic_analysis_label.setFont(QFont(self.chord_symbol_label.font().family(), 16))
 
     def _init_analytical_type_field(self):
         self.analytical_type_combobox = QComboBox()
@@ -134,7 +130,7 @@ class Cell:
 
     def set_harmonic_analysis(self, value):
         self.harmonic_analysis = value
-        self.harmonic_analysis_line_edit.setText(value)
+        self.harmonic_analysis_label.setText(value)
 
     def set_chords(self, chords):
         self.chords = chords
