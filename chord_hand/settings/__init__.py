@@ -15,7 +15,7 @@ def init_chord_symbols():
     from chord_hand.chord.quality import ChordQuality
 
     # Should be called by main, hence 'settings' must be in the path
-    with open(Path('settings', 'chord_symbols.csv'), 'r', newline='', encoding='utf-8') as f:
+    with open(Path(__file__).parent / 'chord_symbols.csv', 'r', newline='', encoding='utf-8') as f:
         reader = csv.reader(f)
         next(reader, None) # skip header
         for raw_quality, symbol in reader:
@@ -28,7 +28,7 @@ def init_chordal_type():
     from chord_hand.chord.quality import ChordQuality
 
     # Should be called by main, hence 'settings' must be in the path
-    with open(Path('settings', 'chordal_types.csv'), 'r', newline='', encoding='utf-8') as f:
+    with open(Path(__file__).parent / 'chordal_types.csv', 'r', newline='', encoding='utf-8') as f:
         reader = csv.reader(f)
         next(reader, None) # skip header
         for raw_quality, raw_chordal_type in reader:
@@ -42,7 +42,7 @@ def init_keymap():
     from chord_hand.chord.quality import ChordQuality
 
     # Should be called by main, hence 'settings' must be in the path
-    with open(Path('settings', 'keymap.csv'), 'r', newline='', encoding='utf-8') as f:
+    with open(Path(__file__).parent / 'keymap.csv', 'r', newline='', encoding='utf-8') as f:
         reader = csv.reader(f)
         next(reader, None)  # skip header
         for key, raw_chord_quality in reader:
@@ -58,7 +58,7 @@ def init_default_analyses():
     from chord_hand.chord.quality import ChordQuality
 
     # Should be called by main, hence 'settings' must be in the path
-    with open(Path('settings', 'default_analyses_major.csv'), 'r', newline='', encoding='utf-8') as f:
+    with open(Path(__file__).parent / 'default_analyses_major.csv', 'r', newline='', encoding='utf-8') as f:
         reader = csv.reader(f)
         next(reader, None)  # skip symbol line
         quality_strings = next(reader)[3:]
@@ -73,7 +73,7 @@ def init_analytical_types():
     from chord_hand.analysis import AnalyticType
 
     # Should be called by main, hence 'settings' must be in the path
-    with open(Path('settings', 'analytic_types.csv'), 'r', newline='', encoding='utf-8') as f:
+    with open(Path(__file__).parent / 'analytic_types.csv', 'r', newline='', encoding='utf-8') as f:
         reader = csv.reader(f)
         next(reader, None)  # skip header
 

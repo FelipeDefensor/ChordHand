@@ -1,3 +1,4 @@
+from __future__ import annotations
 import csv
 import json
 
@@ -13,9 +14,9 @@ from PyQt6.QtWidgets import (
     QInputDialog,
     QFileDialog,
     QDialog,
+    QMessageBox,
 )
 
-from chord_hand.analysis.harmonic_region import HarmonicRegion
 from chord_hand.cell import CELL_WIDTH, Cell
 from chord_hand.chord.chord import Chord
 from chord_hand.chord.decode import (
@@ -25,13 +26,25 @@ from chord_hand.chord.decode import (
 from chord_hand.chord.encode import encode_measure
 from chord_hand.crash_dialog import CrashDialog
 
+from chord_hand.analysis.harmonic_region import HarmonicRegion
+
 LINE_LENGTH = 4
 FIELD_HEIGHT = 40
 
 
+def display_error(title, message):
+    try:
+        QMessageBox(
+            QMessageBox.Icon.Critical, title, message, QMessageBox.StandardButton.Close
+        ).exec()
+    finally:
+        print(message)
+
+
 class MainWindow(QMainWindow):
     def __init__(self, field_types=(
-            Cell.FieldType.CHORD_SYMBOLS, Cell.FieldType.HARMONIC_REGION, Cell.FieldType.HARMONIC_ANALYSIS, Cell.FieldType.ANALYTICAL_TYPE)):
+            Cell.FieldType.CHORD_SYMBOLS, Cell.FieldType.HARMONIC_REGION, Cell.FieldType.HARMONIC_ANALYSIS,
+            Cell.FieldType.ANALYTICAL_TYPE)):
         super().__init__()
         self.resize(800, 240)
         self.setWindowTitle('ChordHand')

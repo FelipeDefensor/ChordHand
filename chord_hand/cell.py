@@ -144,7 +144,8 @@ class Cell:
 
     def set_region(self, region):
         self.region = region
-        self.region_label.setText(region.to_symbol())
+        if region:
+            self.region_label.setText(region.to_symbol())
         text_color = 'black' if region else 'red'
         self.region_label.setStyleSheet(f'color: {text_color}')
 
@@ -177,7 +178,7 @@ class Cell:
         if not text:
             self.region = ""
             self.region_code = ""
-        if text and text[-1] == " ":
+        elif text and text[-1] == " ":
             self.chord_code_line_edit.setText(text[:-1])
             self.on_next_measure()
         else:
@@ -191,9 +192,10 @@ class Cell:
     def analyze_harmonies(self, analytic_type=None):
         analyses = []
         region = self.get_active_harmonic_region()
+        if not region:
+            return
         for chord in self.chords:
             analysis = chord_hand.analysis.analyze(chord, region, analytic_type)
-            print(analysis)
             analyses.append(analysis)
 
         self.set_analysis(analyses)
