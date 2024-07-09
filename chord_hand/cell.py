@@ -3,7 +3,7 @@ from enum import StrEnum, auto
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import QFrame, QSizePolicy, QLabel, QLineEdit, QComboBox, QGridLayout
+from PyQt6.QtWidgets import QFrame, QSizePolicy, QLabel, QLineEdit, QComboBox, QGridLayout, QCheckBox
 
 import chord_hand.analysis
 import chord_hand.settings
@@ -116,7 +116,7 @@ class Cell:
         self.analysis_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.analysis_label.setFixedHeight(self.LINE_EDIT_HEIGHT)
         self.layout.addWidget(
-            self.analysis_label, 4, 0, Qt.AlignmentFlag.AlignHCenter
+            self.analysis_label, 4, 0, 2, 1, Qt.AlignmentFlag.AlignHCenter
         )
         self.analysis_label.setFont(QFont(self.chord_symbol_label.font().family(), 14))
 
@@ -126,6 +126,9 @@ class Cell:
             self.analytic_type_combobox.addItem(name, analytic_type)
         self.analytic_type_combobox.currentTextChanged.connect(self.on_analytic_type_combobox_edited)
         self.layout.addWidget(self.analytic_type_combobox, 4, 1, Qt.AlignmentFlag.AlignHCenter)
+
+        self.analytical_type_lock_checkbox = QCheckBox('Lock')
+        self.layout.addWidget(self.analytical_type_lock_checkbox, 5, 1, Qt.AlignmentFlag.AlignHCenter)
 
     def set_n(self, n):
         self.n = n
@@ -141,6 +144,9 @@ class Cell:
         self.analysis_label.setText(' '.join(list(map(get_label, value))))
         if value[0]:
             self.analytic_type_combobox.setCurrentText(value[0].type.name)
+
+    def set_is_analytic_type_locked(self, value):
+        self.analytical_type_lock_checkbox.setChecked(value)
 
     def set_chords(self, chords):
         self.chords = chords
@@ -169,6 +175,7 @@ class Cell:
             self.chord_code_line_edit.setText(text[:-1])
             self.on_next_measure()
             return
+
         self.chord_code = text
         try:
             codes = parse_multimeasure_code(text)[0]
@@ -199,7 +206,13 @@ class Cell:
         if self.harmonic_analysis:
             self.analyze_harmonies(settings.name_to_analytic_type[value])
 
+    @property
+    def is_analytic_type_locked(self):
+            return self.analytical_type_lock_checkbox.checkState() == Qt.CheckState.Checked
+
     def analyze_harmonies(self, analytic_type=None):
+        if self.is_analytic_type_locked:
+            analytic_type = self.analytic_type_combobox.currentData()
         analyses = []
         if not self.region:
             return

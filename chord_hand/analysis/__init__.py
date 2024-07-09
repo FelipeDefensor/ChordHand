@@ -20,6 +20,9 @@ class AnalyticType:
     relative_step: int
     relative_pci: int
 
+    def to_dict(self):
+        return self.__dict__
+
 
 @dataclass
 class HarmonicAnalysis:
@@ -49,6 +52,23 @@ class HarmonicAnalysis:
             else:
                 suffix = ''
             return self.type.name + self.quality.to_symbol() + suffix
+
+    def to_dict(self):
+        return {
+            'type': self.type.to_dict(),
+            'step': self.step,
+            'chroma': self.chroma,
+            'relative_to_step': self.relative_to_step,
+            'relative_to_chroma': self.relative_to_chroma,
+            'quality': self.quality.to_dict()
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        is_quality_custom = data['quality'].pop('custom')
+        quality = ChordQuality(**data.pop('quality')) if not is_quality_custom else CustomChordQuality(**data['quality'])
+        type = AnalyticType(**data.pop('type'))
+        return cls(type, **data, quality=quality)
 
 
 NOTE_NAME_TO_STEP = {"C": 0, "D": 1, "E": 2, "F": 3, "G": 4, "A": 5, "B": 6}

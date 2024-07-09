@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
 )
 
 import chord_hand.projeto_mpb
+from chord_hand.analysis import HarmonicAnalysis
 from chord_hand.cell import CELL_WIDTH, Cell
 from chord_hand.chord.chord import Chord
 from chord_hand.chord.decode import (
@@ -236,6 +237,9 @@ class MainWindow(QMainWindow):
     def get_analyses(self):
         return [cell.harmonic_analysis for cell in self.cells]
 
+    def get_are_analytic_types_locked(self):
+        return [cell.is_analytic_type_locked for cell in self.cells]
+
     def get_decoded_chords(self):
         return list(map(decode, chord) for chord in self.chords)
 
@@ -243,10 +247,19 @@ class MainWindow(QMainWindow):
         return [list(map(str, measure)) for measure in self.get_chords()]
 
     def get_serialized_chords(self):
-        return {i: serialize_chord_measure(bar) for i, bar in enumerate(self.get_chords())}
+        return {i: serialize_chord_list(bar) for i, bar in enumerate(self.get_chords())}
 
-    def get_serialized_harmonic_regions(self):
-        return {i: serialize_harmonic_region(region) for i, region in enumerate(self.get_regions())}
+    def get_serialized_regions(self):
+        return {i: serialize_region(region) for i, region in enumerate(self.get_regions())}
+
+    def get_serialized_analyses(self):
+        result = {}
+        for i, (analyses, at_locked) in enumerate(zip(self.get_analyses(), self.get_are_analytic_types_locked())):
+            result[i] = {
+                'analyses': list(map(serialize_analysis, analyses)),
+                'analytic_type_locked': at_locked
+            }
+        return result
 
     @staticmethod
     def get_file_data():
@@ -266,7 +279,8 @@ class MainWindow(QMainWindow):
             self.clear()
             self.load_cells(len(data['chords']))
             self.load_chords(data["chords"])
-            self.load_harmonic_regions(data["regions"])
+            self.load_regions(data["regions"])
+            self.load_analyses(data['analyses'])
 
     def load_chord_symbols_from_text(self):
         result, success = QInputDialog().getMultiLineText(None, "Load text", "")
@@ -280,16 +294,26 @@ class MainWindow(QMainWindow):
         self.add_widgets()
         self.position_widgets()
 
-    def load_chords(self, chords_data):
-        for n, measure_data in chords_data.items():
-            self.cells[int(n)].set_chords(list(map(Chord.from_dict, measure_data)))
+    def load_chords(self, n_to_data):
+        for n, data in n_to_data.items():
+            self.cells[int(n)].set_chords(list(map(Chord.from_dict, data)))
 
-    def load_harmonic_regions(self, regions_data):
-        for n, region_data in regions_data.items():
-            if not region_data:
+    def load_regions(self, n_to_data):
+        for n, data in n_to_data.items():
+            if not data:
                 continue
-            self.cells[int(n)].set_region(HarmonicRegion.from_dict(region_data), inherited=False)
+            self.cells[int(n)].set_region(HarmonicRegion.from_dict(data), inherited=False)
         self.update_regions()
+
+    def load_analyses(self, n_to_data):
+        def analysis_from_data(data):
+            return HarmonicAnalysis.from_dict(data)
+
+        for n, data in n_to_data.items():
+            if not data:
+                continue
+            self.cells[int(n)].set_is_analytic_type_locked(data.pop('analytic_type_locked'))
+            self.cells[int(n)].set_analysis(list(map(analysis_from_data, data['analyses'])))
 
     @staticmethod
     def get_music_title():
@@ -311,7 +335,8 @@ class MainWindow(QMainWindow):
                 {
                     "title": name,
                     "chords": self.get_serialized_chords(),
-                    "regions": self.get_serialized_harmonic_regions(),
+                    "analyses": self.get_serialized_analyses(),
+                    "regions": self.get_serialized_regions(),
                 },
                 file,
             )
@@ -440,12 +465,16 @@ def serialize_chord(chord):
     return chord.to_dict()
 
 
-def serialize_harmonic_region(region):
+def serialize_region(region):
     return region.to_dict() if region else None
 
 
-def serialize_chord_measure(measure):
-    return [serialize_chord(chord) for chord in measure]
+def serialize_chord_list(chords):
+    return [serialize_chord(chord) for chord in chords]
+
+
+def serialize_analysis(analysis):
+    return analysis.to_dict() if analysis else None
 
 
 def show_crash_dialog(data_dump, exc_message):
