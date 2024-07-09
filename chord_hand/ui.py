@@ -329,10 +329,10 @@ class MainWindow(QMainWindow):
                         ord(chord.quality.to_chordal_type()[0]) if not is_quality_custom else '',  # genus
                         chord.quality.to_chordal_type()[1] if not is_quality_custom else '',  # variante
                         chord_hand.projeto_mpb.analysis_to_projeto_mpb_code(analysis, region.modality)if not is_quality_custom else '',  # função harmônica
-                        str(region.tonic),  # tonalidade
-                        str(region.modality),  # modalidade
                         (i + 1) + j / len(chords),  # compasso.fração
                         str(chord),  # símbolo (para facilitar a leitura)
+                        str(region.tonic),  # tonalidade
+                        str(region.modality),  # modalidade
                     ])
 
     def write_csv_tilia(self, path):
