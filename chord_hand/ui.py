@@ -139,7 +139,6 @@ class MainWindow(QMainWindow):
                     self.on_next_measure,
                     self.update_regions,
                     self.field_types,
-                    self.get_active_harmonic_region,
                     chord_code="",
                 )
             )
@@ -152,7 +151,6 @@ class MainWindow(QMainWindow):
                     self.on_next_measure,
                     self.update_regions,
                     self.field_types,
-                    self.get_active_harmonic_region,
                     chord_code=encode_measure(chords),
                 )
             )
@@ -169,7 +167,7 @@ class MainWindow(QMainWindow):
         self.cells[next_index].set_focus()
         self.resize_to_fit_cells()
 
-    def update_regions(self, cell):
+    def update_regions(self):
         current_region = None
         for cell in self.cells:
             if cell.region and not cell.is_region_inherited:
@@ -291,6 +289,7 @@ class MainWindow(QMainWindow):
             if not region_data:
                 continue
             self.cells[int(n)].set_region(HarmonicRegion.from_dict(region_data), inherited=False)
+        self.update_regions()
 
     @staticmethod
     def get_music_title():
@@ -385,7 +384,6 @@ class MainWindow(QMainWindow):
             self.on_next_measure,
             self.update_regions,
             self.field_types,
-            self.get_active_harmonic_region,
             chord_code="",
         )
         self.cells.insert(index, cell)

@@ -30,9 +30,8 @@ class Cell:
             self,
             n,
             on_next_measure,
-            propagate_region_change,
+            update_other_cell_regions,
             field_types,
-            get_active_harmonic_region,
             chord_code="",
             analysis_code="",
             region_code="",
@@ -48,8 +47,7 @@ class Cell:
         self._init_widgets()
         self.proxy = None
         self.region = ""
-        self.get_active_harmonic_region = functools.partial(get_active_harmonic_region, self)
-        self.update_other_cell_regions = functools.partial(propagate_region_change, self)
+        self.update_other_cell_regions = update_other_cell_regions
         self.harmonic_analysis = []
 
     def _init_widgets(self):
@@ -203,11 +201,10 @@ class Cell:
 
     def analyze_harmonies(self, analytic_type=None):
         analyses = []
-        region = self.get_active_harmonic_region()
-        if not region:
+        if not self.region:
             return
         for chord in self.chords:
-            analysis = chord_hand.analysis.analyze(chord, region, analytic_type)
+            analysis = chord_hand.analysis.analyze(chord, self.region, analytic_type)
             analyses.append(analysis)
 
         self.set_analysis(analyses)
