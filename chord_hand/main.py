@@ -21,6 +21,7 @@ def main():
     chord_hand.settings.init_keymap()
     chord_hand.settings.init_default_analyses()
     chord_hand.settings.init_analytical_types()
+    chord_hand.settings.init_projeto_mpb_function_codes()
 
     app = QApplication(sys.argv)
     mw = MainWindow()

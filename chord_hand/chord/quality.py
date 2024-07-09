@@ -75,3 +75,21 @@ class ChordQuality:
     def to_dict(self):
         return self.__dict__
 
+    def match_string(self, string):
+        string_intervals = [s if s != '_' else '' for s in string]
+        own_intervals = [
+            self.third,
+            self.fifth,
+            self.seventh,
+            self.ninth,
+            self.eleventh,
+            self.thirteenth,
+            self.second,
+            self.fourth,
+            self.sixth
+        ]
+        for string_interval, own_interval in zip(string_intervals, own_intervals):
+            match = string_interval == '*' or string_interval == own_interval
+            if not match:
+                return False
+        return True

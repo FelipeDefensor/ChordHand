@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
 )
 
+import chord_hand.projeto_mpb
 from chord_hand.cell import CELL_WIDTH, Cell
 from chord_hand.chord.chord import Chord
 from chord_hand.chord.decode import (
@@ -220,8 +221,11 @@ class MainWindow(QMainWindow):
     def get_chords(self):
         return decode_chord_code_sequence(self.get_chord_codes())
 
-    def get_harmonic_regions(self):
+    def get_regions(self):
         return [cell.region for cell in self.cells]
+
+    def get_analyses(self):
+        return [cell.harmonic_analysis for cell in self.cells]
 
     def get_decoded_chords(self):
         return list(map(decode, chord) for chord in self.chords)
@@ -233,7 +237,7 @@ class MainWindow(QMainWindow):
         return {i: serialize_chord_measure(bar) for i, bar in enumerate(self.get_chords())}
 
     def get_serialized_harmonic_regions(self):
-        return {i: serialize_harmonic_region(region) for i, region in enumerate(self.get_harmonic_regions())}
+        return {i: serialize_harmonic_region(region) for i, region in enumerate(self.get_regions())}
 
     @staticmethod
     def get_file_data():
@@ -305,17 +309,18 @@ class MainWindow(QMainWindow):
     def write_csv_projeto_mpb(self, path):
         with open(path, 'w', newline='', encoding='utf-8') as f:
             csv_writer = csv.writer(f)
-            for i, measure in enumerate(self.get_chords()):
-                for j, chord in enumerate(measure):
+            for i, (chords, analyses, region) in enumerate(zip(self.get_chords(), self.get_analyses(), self.get_regions())):
+                for j, (chord, analysis) in enumerate(zip(chords, analyses)):
                     csv_writer.writerow([
-                        chord.root.to_pitch_class(),
-                        chord.bass.to_pitch_class(),
-                        ord(chord.quality.to_chordal_type()[0]),
-                        chord.quality.to_chordal_type()[1],
-                        '',
-                        '',
-                        (i + 1) + j / len(measure),
-                        str(chord),
+                        chord.root.to_pitch_class(),  # fundamental
+                        chord.bass.to_pitch_class(),  # baixo
+                        ord(chord.quality.to_chordal_type()[0]),  # genus
+                        chord.quality.to_chordal_type()[1],  # variante
+                        chord_hand.projeto_mpb.analysis_to_projeto_mpb_code(analysis, region.modality),  # função harmônica
+                        str(region.tonic),  # tonalidade
+                        str(region.modality),  # modalidade
+                        (i + 1) + j / len(chords),  # compasso.fração
+                        str(chord),  # símbolo (para facilitar a leitura)
                     ])
 
     def write_csv_tilia(self, path):
