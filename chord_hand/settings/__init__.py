@@ -86,6 +86,17 @@ def init_analytical_types():
 def init_projeto_mpb_function_codes():
     from chord_hand.analysis.harmonic_region import Modality
 
+    def init_code(key, qualities, modality):
+        qualities = qualities.split(';')
+
+        if key not in analytic_type_args_to_projeto_mpb_code[modality]:
+            analytic_type_args_to_projeto_mpb_code[modality][key] = {}
+        if not qualities:
+            analytic_type_args_to_projeto_mpb_code[modality][key]['*' * 10] = code
+        else:
+            for quality in qualities:
+                analytic_type_args_to_projeto_mpb_code[modality][key][quality] = code
+
     analytic_type_args_to_projeto_mpb_code[Modality.MAJOR] = {}
     analytic_type_args_to_projeto_mpb_code[Modality.MINOR] = {}
 
@@ -93,17 +104,9 @@ def init_projeto_mpb_function_codes():
         reader = csv.reader(f)
         next(reader, None)  # skip header
         for function, analytic_type_string, step, major_chroma, minor_chroma, major_qualities, minor_qualities, code in reader:
-            # proccess major
-            key = (analytic_type_string, int(step), int(major_chroma))
-
-            if key not in analytic_type_args_to_projeto_mpb_code[Modality.MAJOR]:
-                analytic_type_args_to_projeto_mpb_code[Modality.MAJOR][key] = {}
-                analytic_type_args_to_projeto_mpb_code[Modality.MINOR][key] = {}
-
-            major_qualities = major_qualities.split(';')
-
-            if not major_qualities:
-                analytic_type_args_to_projeto_mpb_code[Modality.MAJOR][key]['*' * 10] = code
-            else:
-                for quality in major_qualities:
-                    analytic_type_args_to_projeto_mpb_code[Modality.MAJOR][key][quality] = code
+            if major_chroma:
+                key = (analytic_type_string, int(step), int(major_chroma))
+                init_code(key, major_qualities, Modality.MAJOR)
+            if minor_chroma:
+                key = (analytic_type_string, int(step), int(minor_chroma))
+                init_code(key, minor_qualities, Modality.MINOR)
