@@ -1,6 +1,7 @@
 from __future__ import annotations
 import csv
 import json
+import traceback
 
 import pandas as pd
 from PyQt6.QtCore import Qt
@@ -384,15 +385,21 @@ class MainWindow(QMainWindow):
         if not success:
             return
 
-        self.write_csv_projeto_mpb(path)
-        pd.read_csv(path, header=None).T.to_csv(path, header=False, index=False)
+        try:
+            self.write_csv_projeto_mpb(path)
+            pd.read_csv(path, header=None).T.to_csv(path, header=False, index=False)
+        except:
+            display_error('Export error', traceback.format_exc())
 
     def export_as_tilia(self):
         path, success = self.get_file_save_path('Untitled.csv', '*.csv')
         if not success:
             return
 
-        self.write_csv_tilia(path)
+        try:
+            self.write_csv_tilia(path)
+        except:
+            display_error('Export error', traceback.format_exc())
 
     @staticmethod
     def export_as_text():
