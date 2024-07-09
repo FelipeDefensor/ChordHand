@@ -353,6 +353,8 @@ class MainWindow(QMainWindow):
         )
 
     def export_as_projeto_mpb(self):
+        self.analyze_harmonies()
+
         path, success = self.get_file_save_path('Untitled.csv', '*.csv')
         if not success:
             return
