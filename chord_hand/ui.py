@@ -396,6 +396,7 @@ class MainWindow(QMainWindow):
         self.position_cell(cell)
         self.view.ensureVisible(cell.proxy)
         cell.proxy.setZValue(-cell.n)
+        self.update_regions()
 
     def add_cell_to_scene(self, cell):
         cell.proxy = self.scene.addWidget(cell.widget)
