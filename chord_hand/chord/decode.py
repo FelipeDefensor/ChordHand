@@ -3,7 +3,6 @@ from chord_hand.chord.quality import ChordQuality, CustomChordQuality
 from chord_hand.chord.keymap import (
     CODE_TO_NOTE,
     NEXT_BAR_CODE,
-    NEXT_CHORD_CODE,
     REPEAT_CHORD_CODE,
     SLASH,
     TEXT_MODE,
