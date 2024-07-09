@@ -25,6 +25,7 @@ from chord_hand.chord.decode import (
     decode_chord_code_sequence,
 )
 from chord_hand.chord.encode import encode_measure
+from chord_hand.chord.quality import CustomChordQuality
 from chord_hand.crash_dialog import CrashDialog
 
 from chord_hand.analysis.harmonic_region import HarmonicRegion
@@ -136,6 +137,7 @@ class MainWindow(QMainWindow):
                 Cell(
                     1,
                     self.on_next_measure,
+                    self.update_regions,
                     self.field_types,
                     self.get_active_harmonic_region,
                     chord_code="",
@@ -148,6 +150,7 @@ class MainWindow(QMainWindow):
                 Cell(
                     i + 1,
                     self.on_next_measure,
+                    self.update_regions,
                     self.field_types,
                     self.get_active_harmonic_region,
                     chord_code=encode_measure(chords),
@@ -165,6 +168,14 @@ class MainWindow(QMainWindow):
             self.insert_cell(len(self.cells))
         self.cells[next_index].set_focus()
         self.resize_to_fit_cells()
+
+    def update_regions(self, cell):
+        current_region = None
+        for cell in self.cells:
+            if cell.region and not cell.is_region_inherited:
+                current_region = cell.region
+            else:
+                cell.set_region(current_region, inherited=True)
 
     def get_active_harmonic_region(self, cell):
         if cell.region_code:
@@ -279,7 +290,7 @@ class MainWindow(QMainWindow):
         for n, region_data in regions_data.items():
             if not region_data:
                 continue
-            self.cells[int(n)].set_region(HarmonicRegion.from_dict(region_data))
+            self.cells[int(n)].set_region(HarmonicRegion.from_dict(region_data), inherited=False)
 
     @staticmethod
     def get_music_title():
@@ -311,12 +322,13 @@ class MainWindow(QMainWindow):
             csv_writer = csv.writer(f)
             for i, (chords, analyses, region) in enumerate(zip(self.get_chords(), self.get_analyses(), self.get_regions())):
                 for j, (chord, analysis) in enumerate(zip(chords, analyses)):
+                    is_quality_custom = isinstance(chord.quality, CustomChordQuality)
                     csv_writer.writerow([
                         chord.root.to_pitch_class(),  # fundamental
                         chord.bass.to_pitch_class(),  # baixo
-                        ord(chord.quality.to_chordal_type()[0]),  # genus
-                        chord.quality.to_chordal_type()[1],  # variante
-                        chord_hand.projeto_mpb.analysis_to_projeto_mpb_code(analysis, region.modality),  # função harmônica
+                        ord(chord.quality.to_chordal_type()[0]) if not is_quality_custom else '',  # genus
+                        chord.quality.to_chordal_type()[1] if not is_quality_custom else '',  # variante
+                        chord_hand.projeto_mpb.analysis_to_projeto_mpb_code(analysis, region.modality)if not is_quality_custom else '',  # função harmônica
                         str(region.tonic),  # tonalidade
                         str(region.modality),  # modalidade
                         (i + 1) + j / len(chords),  # compasso.fração
@@ -371,6 +383,7 @@ class MainWindow(QMainWindow):
         cell = Cell(
             index,
             self.on_next_measure,
+            self.update_regions,
             self.field_types,
             self.get_active_harmonic_region,
             chord_code="",

@@ -30,6 +30,7 @@ class Cell:
             self,
             n,
             on_next_measure,
+            propagate_region_change,
             field_types,
             get_active_harmonic_region,
             chord_code="",
@@ -48,6 +49,7 @@ class Cell:
         self.proxy = None
         self.region = ""
         self.get_active_harmonic_region = functools.partial(get_active_harmonic_region, self)
+        self.update_other_cell_regions = functools.partial(propagate_region_change, self)
         self.harmonic_analysis = []
 
     def _init_widgets(self):
@@ -132,9 +134,15 @@ class Cell:
         self.n_label.setText(str(n))
 
     def set_analysis(self, value):
+        def get_label(analysis):
+            if not analysis:
+                return '-'
+            return str(analysis)
+
         self.harmonic_analysis = value
-        self.analysis_label.setText(' '.join(list(map(str, value))))
-        self.analytic_type_combobox.setCurrentText(value[0].type.name)
+        self.analysis_label.setText(' '.join(list(map(get_label, value))))
+        if value[0]:
+            self.analytic_type_combobox.setCurrentText(value[0].type.name)
 
     def set_chords(self, chords):
         self.chords = chords
@@ -142,12 +150,13 @@ class Cell:
         self.chord_code_line_edit.setText(self.chord_code)
         self._set_chord_symbol_label(chords)
 
-    def set_region(self, region):
+    def set_region(self, region: HarmonicRegion, inherited: bool):
         self.region = region
-        if region:
-            self.region_label.setText(region.to_symbol())
-        text_color = 'black' if region else 'red'
-        self.region_label.setStyleSheet(f'color: {text_color}')
+        self.is_region_inherited = inherited
+        if not inherited:
+            self.region_label.setText(region.to_symbol() if region else '')
+            text_color = 'black' if region else 'red'
+            self.region_label.setStyleSheet(f'color: {text_color}')
 
     def set_focus(self):
         self.chord_code_line_edit.selectAll()
@@ -178,12 +187,15 @@ class Cell:
         if not text:
             self.region = ""
             self.region_code = ""
+            self.set_region(None, inherited=False)
+            self.update_other_cell_regions()
         elif text and text[-1] == " ":
-            self.chord_code_line_edit.setText(text[:-1])
+            self.region_label.setText(text[:-1])
             self.on_next_measure()
         else:
             self.region_code = text
-            self.set_region(HarmonicRegion.from_string(text))
+            self.set_region(HarmonicRegion.from_string(text), inherited=False)
+            self.update_other_cell_regions()
 
     def on_analytic_type_combobox_edited(self, value):
         if self.harmonic_analysis:

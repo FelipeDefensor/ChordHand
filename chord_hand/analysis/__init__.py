@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import chord_hand.ui
 from chord_hand.chord.chord import Chord, RepeatChord
 from chord_hand.chord.note import Note
-from chord_hand.chord.quality import ChordQuality
+from chord_hand.chord.quality import ChordQuality, CustomChordQuality
 from chord_hand.settings import name_to_analytic_type, default_analyses
 
 if TYPE_CHECKING:
@@ -99,8 +99,8 @@ def analyze(chord: Chord, region: HarmonicRegion, analytic_type: AnalyticType | 
     if isinstance(chord, RepeatChord):
         return str(chord)
 
-    if not region or not chord or chord.quality.name == 'ERROR':
-        return ''
+    if not region or not chord or chord.quality.name == 'ERROR' or isinstance(chord.quality, CustomChordQuality):
+        return None
     chord_step = (chord.root.step - region.tonic.step) % 7
     chord_chroma = -(region.tonic.chroma - chord.root.chroma)
     chord_pc = chord.root.to_pitch_class()
