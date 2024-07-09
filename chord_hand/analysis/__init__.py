@@ -104,16 +104,14 @@ def analyze(chord: Chord, region: HarmonicRegion, analytic_type: AnalyticType | 
     chord_step = (chord.root.step - region.tonic.step) % 7
     chord_chroma = -(region.tonic.chroma - chord.root.chroma)
     chord_pc = chord.root.to_pitch_class()
-    ic(chord_pc)
     if not analytic_type:
-        analytic_type = name_to_analytic_type[default_analyses[(chord_step, chord_chroma)][chord.quality]]
-    ic(analytic_type)
+        analytic_type = name_to_analytic_type[
+            default_analyses[(chord_step, chord_chroma)].get(
+                chord.quality, 'I'
+            )
+        ]
     target_step = (chord_step + analytic_type.relative_step) % 7
-    ic(target_step)
     target_pc = Note(region.tonic.step, 0).to_pitch_class() % 12 + Note(target_step, 0).to_pitch_class() % 12
-    ic(target_pc)
     target_chroma = int_to_chroma((chord_pc - target_pc) % 12 + analytic_type.relative_pci)
-    ic(target_chroma)
     analysis = HarmonicAnalysis(analytic_type, chord_step, chord_chroma, target_step, target_chroma, chord.quality)
-    ic(analysis)
     return analysis
