@@ -5,10 +5,11 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import chord_hand.ui
+from chord_hand.analysis.modality import Modality
 from chord_hand.chord.chord import Chord, RepeatChord
 from chord_hand.chord.note import Note
 from chord_hand.chord.quality import ChordQuality, CustomChordQuality
-from chord_hand.settings import name_to_analytic_type, default_analyses
+from chord_hand.settings import name_to_analytic_type, default_analyses_major, default_analyses_minor
 
 if TYPE_CHECKING:
     from chord_hand.analysis.harmonic_region import HarmonicRegion
@@ -125,6 +126,7 @@ def analyze(chord: Chord, region: HarmonicRegion, analytic_type: AnalyticType | 
     chord_chroma = -(region.tonic.chroma - chord.root.chroma)
     chord_pc = chord.root.to_pitch_class()
     if not analytic_type:
+        default_analyses = default_analyses_major if region.modality == Modality.MAJOR else default_analyses_minor
         analytic_type = name_to_analytic_type[
             default_analyses[(chord_step, chord_chroma)].get(
                 chord.quality, 'I'

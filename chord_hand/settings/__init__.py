@@ -7,7 +7,8 @@ chord_quality_to_symbol = {}
 chord_quality_to_chordal_type = {}
 key_to_chord_quality = {}
 chord_quality_to_key = {}
-default_analyses = {}
+default_analyses_major = {}
+default_analyses_minor = {}
 name_to_analytic_type = {}
 analytic_type_args_to_projeto_mpb_code = {}
 
@@ -59,15 +60,20 @@ def init_default_analyses():
     from chord_hand.chord.quality import ChordQuality
 
     # Should be called by main, hence 'settings' must be in the path
-    with open(Path(__file__).parent / 'default_analyses_major.csv', 'r', newline='', encoding='utf-8') as f:
-        reader = csv.reader(f)
-        next(reader, None)  # skip symbol line
-        quality_strings = next(reader)[3:]
-        qualities = [ChordQuality.from_string(s) for s in quality_strings]
+    args = [
+        ('default_analyses_major', default_analyses_major),
+        ('default_analyses_minor', default_analyses_minor)
+    ]
+    for filename, default_analyses in args:
+        with open(Path(__file__).parent / f'{filename}.csv', 'r', newline='', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            next(reader, None)  # skip symbol line
+            quality_strings = next(reader)[3:]
+            qualities = [ChordQuality.from_string(s) for s in quality_strings]
 
-        for symbol, step, chroma, *analyses in reader:
-            analyses = ['I' if a == '' else a for a in analyses]
-            default_analyses[(int(step), int(chroma))] = dict(zip(qualities, analyses))
+            for symbol, step, chroma, *analyses in reader:
+                analyses = ['I' if a == '' else a for a in analyses]
+                default_analyses[(int(step), int(chroma))] = dict(zip(qualities, analyses))
 
 
 def init_analytical_types():
@@ -84,7 +90,7 @@ def init_analytical_types():
 
 
 def init_projeto_mpb_function_codes():
-    from chord_hand.analysis.harmonic_region import Modality
+    from chord_hand.analysis.modality import Modality
 
     def init_code(key, qualities, modality):
         qualities = qualities.split(';')

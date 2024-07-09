@@ -1,13 +1,8 @@
 from dataclasses import dataclass
-from enum import StrEnum, auto
 
+from chord_hand.analysis.modality import Modality
 from chord_hand.chord.note import Note, CHROMA_TO_SIGN
 from chord_hand.analysis import STEP_TO_NOTE_NAME, str_to_note
-
-
-class Modality(StrEnum):
-    MAJOR = auto()
-    MINOR = auto()
 
 
 @dataclass
