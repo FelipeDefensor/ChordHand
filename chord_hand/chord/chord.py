@@ -1,14 +1,14 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from chord_hand.chord.quality import ChordQuality
+from chord_hand.chord.quality import ChordQuality, CustomChordQuality
 from chord_hand.chord.note import Note
 
 
 @dataclass
 class Chord:
     root: Note
-    quality: ChordQuality
+    quality: ChordQuality | CustomChordQuality
     bass: Optional[Note] = None
 
     def __post_init__(self):
@@ -37,9 +37,10 @@ class Chord:
 
     @classmethod
     def from_dict(cls, data):
+        is_quality_custom = data['quality'].pop('custom') 
         return Chord(
             root=Note(**data['root']),
-            quality=ChordQuality(**data['quality']),
+            quality=ChordQuality(**data['quality']) if not is_quality_custom else CustomChordQuality(**data['quality']),
             bass=Note(**data['bass'])
         )
 

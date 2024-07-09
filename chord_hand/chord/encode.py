@@ -5,12 +5,17 @@ from chord_hand.chord.keymap import (
     REPEAT_CHORD_CODE,
     SLASH,
 )
+from chord_hand.chord.quality import ChordQuality
 
 
 def encode_chord_quality(chord):
     from chord_hand.settings import chord_quality_to_key
 
-    return chord_quality_to_key[chord]
+    if isinstance(chord, ChordQuality):
+        return chord_quality_to_key[chord]
+    else:
+        # custom chord quality
+        return chord.to_code()
 
 
 def encode_note(note):
@@ -23,11 +28,8 @@ def encode_chord(chord):
     elif isinstance(chord, RepeatChord):
         return "%"
     root_str = encode_note(chord.root)
-    quality_str = (
-        encode_chord_quality(chord.quality)
-        if not chord.quality.is_name_only()
-        else chord.quality.to_string()
-    )
+    quality_str = encode_chord_quality(chord.quality)
+
     chord_str = f"{SLASH}{encode_note(chord.bass)}" if chord.is_inverted() else ""
 
     return root_str + quality_str + chord_str

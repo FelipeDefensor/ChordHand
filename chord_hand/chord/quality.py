@@ -73,7 +73,7 @@ class ChordQuality:
         return chord_hand.settings.chord_quality_to_chordal_type[self]
 
     def to_dict(self):
-        return self.__dict__
+        return self.__dict__ | {'custom': False}
 
     def match_string(self, string):
         string_intervals = [s if s != '_' else '' for s in string]
@@ -93,3 +93,30 @@ class ChordQuality:
             if not match:
                 return False
         return True
+
+
+@dataclass
+class CustomChordQuality:
+    name: str
+
+    @classmethod
+    def from_string(cls, value):
+        return cls(value)
+
+    def __str__(self):
+        return self.to_string()
+
+    def to_string(self):
+        return self.name
+
+    def to_symbol(self):
+        return self.name
+
+    def to_chordal_type(self):
+        return None
+
+    def to_dict(self):
+        return {'name': self.name, 'custom': True}
+
+    def to_code(self):
+        return '{' + self.name + '}'
