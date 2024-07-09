@@ -1,5 +1,6 @@
 from __future__ import annotations
 import csv
+import itertools
 import json
 import traceback
 
@@ -345,19 +346,19 @@ class MainWindow(QMainWindow):
     def write_csv_projeto_mpb(self, path):
         with open(path, 'w', newline='', encoding='utf-8') as f:
             csv_writer = csv.writer(f)
-            for i, (chords, analyses, region) in enumerate(zip(self.get_chords(), self.get_analyses(), self.get_regions())):
-                for j, (chord, analysis) in enumerate(zip(chords, analyses)):
+            for i, (chords, analyses, region) in enumerate(itertools.zip_longest(self.get_chords(), self.get_analyses(), self.get_regions())):
+                for j, (chord, analysis) in enumerate(itertools.zip_longest(chords, analyses)):
                     is_quality_custom = isinstance(chord.quality, CustomChordQuality)
                     csv_writer.writerow([
                         chord.root.to_pitch_class(),  # fundamental
                         chord.bass.to_pitch_class(),  # baixo
                         ord(chord.quality.to_chordal_type()[0]) if not is_quality_custom else '',  # genus
                         chord.quality.to_chordal_type()[1] if not is_quality_custom else '',  # variante
-                        chord_hand.projeto_mpb.analysis_to_projeto_mpb_code(analysis, region.modality)if not is_quality_custom else '',  # função harmônica
+                        chord_hand.projeto_mpb.analysis_to_projeto_mpb_code(analysis, region.modality) if region and not is_quality_custom else '',  # função harmônica
                         (i + 1) + j / len(chords),  # compasso.fração
                         str(chord),  # símbolo (para facilitar a leitura)
-                        str(region.tonic),  # tonalidade
-                        str(region.modality),  # modalidade
+                        str(region.tonic) if region else '',  # tonalidade
+                        str(region.modality) if region else '',  # modalidade
                     ])
 
     def write_csv_tilia(self, path):
