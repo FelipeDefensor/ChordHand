@@ -373,6 +373,32 @@ class MainWindow(QMainWindow):
                         str(chord)
                     ])
 
+    def write_txt(self, path):
+        with open(path, 'w', newline='', encoding='utf-8') as f:
+            f.write('CHORDS: ')
+            for measure in self.get_chords():
+                for chord in measure:
+                    f.write(str(chord) + ' ')
+                f.write(' | ')
+            f.write('\n')
+
+            f.write('REGIONS: ')
+            prev_region = None
+            for region in self.get_regions():
+                if region != prev_region:
+                    f.write(region.to_symbol() + ' ')
+                    prev_region = region
+                f.write(' | ')
+            f.write('\n')
+
+            f.write('ANALYSES: ')
+            for measure in self.get_analyses():
+                for analysis in measure:
+                    f.write(str(analysis) + ' ')
+                f.write(' | ')
+
+
+
     @staticmethod
     def get_file_save_path(initial, name_filter):
         return QFileDialog.getSaveFileName(
@@ -382,7 +408,7 @@ class MainWindow(QMainWindow):
     def export_as_projeto_mpb(self):
         self.analyze_harmonies()
 
-        path, success = self.get_file_save_path('Untitled.csv', '*.csv')
+        path, success = self.get_file_save_path('untitled.csv', '*.csv')
         if not success:
             return
 
@@ -393,7 +419,7 @@ class MainWindow(QMainWindow):
             display_error('Export error', traceback.format_exc())
 
     def export_as_tilia(self):
-        path, success = self.get_file_save_path('Untitled.csv', '*.csv')
+        path, success = self.get_file_save_path('untitled.csv', '*.csv')
         if not success:
             return
 
@@ -402,9 +428,17 @@ class MainWindow(QMainWindow):
         except:
             display_error('Export error', traceback.format_exc())
 
-    @staticmethod
-    def export_as_text():
-        print('Exporting as text...')
+    def export_as_text(self):
+        path, success = self.get_file_save_path('untitled.txt', '*.txt')
+        if not success:
+            return
+
+        self.analyze_harmonies()
+
+        try:
+            self.write_txt(path)
+        except:
+            display_error('Export error', traceback.format_exc())
 
     def remove_cell(self, index):
         cell = self.cells[index]
