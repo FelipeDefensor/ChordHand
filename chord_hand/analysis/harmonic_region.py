@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 
 from chord_hand.analysis.modality import Modality
-from chord_hand.chord.note import Note, CHROMA_TO_SIGN
-from chord_hand.analysis import STEP_TO_NOTE_NAME, str_to_note
+from chord_hand.chord.note import Note
 
 
 @dataclass
@@ -11,30 +10,8 @@ class HarmonicRegion:
     modality: Modality
 
     def to_symbol(self):
-        step = STEP_TO_NOTE_NAME[self.tonic.step]
-        accidental = CHROMA_TO_SIGN[self.tonic.chroma] if self.tonic.chroma else ''
         modality = 'm' if self.modality == Modality.MINOR else ''
-        return step + accidental + modality
-
-    @classmethod
-    def from_string(cls, s):
-        if len(s) > 1 and s[1] not in list(CHROMA_TO_SIGN.values()) + ['m', 'M']:  # invalid second letter
-            return None
-
-        try:
-            tonic = str_to_note(s[0].upper() + s[1:])
-        except KeyError:
-            return None
-
-        if tonic.step == -1:  # -1 indicates an error
-            return None
-
-        if s[0].islower() or (len(s) > 1 and s[1] == 'm'):
-            modality = Modality.MINOR
-        else:
-            modality = Modality.MAJOR
-
-        return HarmonicRegion(tonic, modality)
+        return self.tonic.to_symbol() + modality
 
     def to_dict(self):
         return {

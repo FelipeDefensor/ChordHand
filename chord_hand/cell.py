@@ -3,15 +3,15 @@ from enum import StrEnum, auto
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import QFrame, QSizePolicy, QLabel, QLineEdit, QComboBox, QGridLayout, QCheckBox
+from PyQt6.QtWidgets import QFrame, QSizePolicy, QLabel, QLineEdit, QComboBox, QGridLayout, QCheckBox, QHBoxLayout
 
 import chord_hand.analysis
 import chord_hand.settings
 from chord_hand import settings
+from chord_hand.analysis import Modality, HarmonicAnalysis
 from chord_hand.chord.chord import Chord
-from chord_hand.chord.decode import decode_chord_code_sequence, decode, parse_multimeasure_code
 from chord_hand.analysis.harmonic_region import HarmonicRegion
-from chord_hand.chord.encode import encode_measure
+from chord_hand.chord.note import Note
 
 CELL_WIDTH = 150
 CELL_HEIGHT = 140
@@ -32,21 +32,21 @@ class Cell:
             on_next_measure,
             update_other_cell_regions,
             field_types,
-            chord_code="",
-            analysis_code="",
-            region_code="",
+            chords=list[Chord],
     ):
+        from chord_hand.settings import encoder
+
         self.n = n
-        self.chords = []
-        self.chord_code = chord_code
-        self.analysis_code = analysis_code
-        self.region_code = region_code
+        self.chords = chords
+        self.chord_codes = encoder.encode_measure(self.chords)
+        self.analysis_code = ''
+        self.region_code = ''
         self.on_next_measure = functools.partial(on_next_measure, self)
         self.field_types = field_types
 
         self._init_widgets()
         self.proxy = None
-        self.region = ""
+        self.region = None
         self.update_other_cell_regions = update_other_cell_regions
         self.harmonic_analysis = []
 
@@ -83,17 +83,13 @@ class Cell:
         self.widget.setFixedSize(self.widget.width(), self.widget.height() + amount)
 
     def _init_chord_symbols_field(self):
-        self.chord_code_line_edit = QLineEdit("".join(self.chord_code))
-        self.chord_code_line_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.chord_code_line_edit.textEdited.connect(self.on_chord_symbol_code_edited)
-        self.chord_code_line_edit.setFixedHeight(self.LINE_EDIT_HEIGHT)
-        self.layout.addWidget(self.chord_code_line_edit, 1, 0, 1, 2, Qt.AlignmentFlag.AlignHCenter)
+        self.chord_codes_line_edit = QLineEdit(self.chord_codes)
+        self.chord_codes_line_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.chord_codes_line_edit.textEdited.connect(self.on_chord_symbol_code_edited)
+        self.chord_codes_line_edit.setFixedHeight(self.LINE_EDIT_HEIGHT)
+        self.layout.addWidget(self.chord_codes_line_edit, 1, 0, 1, 2, Qt.AlignmentFlag.AlignHCenter)
 
-        self.chord_symbol_label = QLabel(
-            " ".join(map(str, decode_chord_code_sequence(self.chord_code)[0]))
-            if self.chord_code
-            else ""
-        )
+        self.chord_symbol_label = QLabel(" ".join([c.to_symbol() for c in self.chords]))
         self.chord_symbol_label.setFixedHeight(self.LINE_EDIT_HEIGHT)
         self.chord_symbol_label.setFont(
             QFont(self.chord_symbol_label.font().family(), 16)
@@ -101,14 +97,19 @@ class Cell:
         self.layout.addWidget(self.chord_symbol_label, 2, 0, 1, 2, Qt.AlignmentFlag.AlignHCenter)
 
     def _init_region_field(self):
-        self.region_label = QLineEdit("".join(self.region_code))
-        self.region_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.region_label.textEdited.connect(
-            self.on_region_field_edited
-        )
-        self.region_label.setFixedHeight(self.LINE_EDIT_HEIGHT)
-        self.layout.addWidget(
-            self.region_label, 3, 0, 1, 2, Qt.AlignmentFlag.AlignHCenter
+        self.region_tonic_combobox = QComboBox()
+        self.region_tonic_combobox.addItems(['', 'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'])
+        self.region_tonic_combobox.activated.connect(self.on_region_tonic_activated)
+        self.region_modality_combobox = QComboBox()
+        self.region_modality_combobox.addItems(['', 'major', 'minor'])
+        self.region_modality_combobox.activated.connect(self.on_region_modality_activated)
+        self.region_layout = QHBoxLayout()
+        self.region_layout.addWidget(self.region_tonic_combobox)
+        self.region_layout.addWidget(self.region_modality_combobox)
+        self.region_tonic_combobox.setFixedHeight(self.LINE_EDIT_HEIGHT)
+        self.region_modality_combobox.setFixedHeight(self.LINE_EDIT_HEIGHT)
+        self.layout.addLayout(
+            self.region_layout, 3, 0, 1, 2, Qt.AlignmentFlag.AlignHCenter
         )
 
     def _init_analysis_field(self):
@@ -134,73 +135,120 @@ class Cell:
         self.n = n
         self.n_label.setText(str(n))
 
-    def set_analysis(self, value):
+    def set_analysis(self, analyses: list[HarmonicAnalysis] | None):
+        if analyses is None:
+            self.harmonic_analysis = []
+            self.analysis_label.setText('')
+            return
+
         def get_label(analysis):
             if not analysis:
                 return '-'
-            return str(analysis)
+            return analysis.to_symbol()
 
-        self.harmonic_analysis = value
-        self.analysis_label.setText(' '.join(list(map(get_label, value))))
-        if value[0]:
-            self.analytic_type_combobox.setCurrentText(value[0].type.name)
+        self.harmonic_analysis = analyses
+        self.analysis_label.setText(' '.join([get_label(x) for x in analyses]))
+        if analyses and analyses[0]:
+            self.analytic_type_combobox.setCurrentText(analyses[0].type.name)
 
     def set_is_analytic_type_locked(self, value):
         self.analytical_type_lock_checkbox.setChecked(value)
 
     def set_chords(self, chords):
+        from chord_hand.settings import encoder
+
         self.chords = chords
-        self.chord_code = encode_measure(chords)
-        self.chord_code_line_edit.setText(self.chord_code)
+        self.chord_codes = encoder.encode_measure(self.chords)
+        self.chord_codes_line_edit.setText(self.chord_codes)
         self._set_chord_symbol_label(chords)
 
-    def set_region(self, region: HarmonicRegion, inherited: bool):
+    def set_region(self, region: HarmonicRegion | None, inherited: bool):
         self.region = region
         self.is_region_inherited = inherited
+        self.analyze_harmonies()
         if not inherited:
-            self.region_label.setText(region.to_symbol() if region else '')
-            text_color = 'black' if region else 'red'
-            self.region_label.setStyleSheet(f'color: {text_color}')
+            self.region_tonic_combobox.setCurrentText(region.tonic.to_symbol() if region else '')
+            self.region_modality_combobox.setCurrentText(region.modality.name.lower() if region else '')
 
     def set_focus(self):
-        self.chord_code_line_edit.selectAll()
-        self.chord_code_line_edit.setFocus()
+        self.chord_codes_line_edit.selectAll()
+        self.chord_codes_line_edit.setFocus()
 
     def _set_chord_symbol_label(self, chords: list[Chord]):
-        self.chord_symbol_label.setText(" ".join(list(map(str, chords))))
+        def to_label(chord):
+            if chord is None or chord.to_symbol() is None:
+                return '?'
+            elif (symbol := chord.to_symbol()) is None:
+                return '?'
+            else:
+                return symbol
+        self.chord_symbol_label.setText(" ".join(list(map(to_label, chords))))
         self.chord_symbol_label.setToolTip(self.chord_symbol_label.text())
+        if self.region:
+            self.analyze_harmonies()
 
     def on_chord_symbol_code_edited(self, text):
-        if text and text[-1] == " ":
-            self.chord_code_line_edit.setText(text[:-1])
+        if not text:
+            self.chord_codes = ""
+            self.chord_symbol_label.setText("")
+            self.chord_symbol_label.setToolTip("")
+            self.chord_codes_line_edit.setText("")
+            return
+        elif text and text[-1] == " ":
+            self.chord_codes_line_edit.setText(text[:-1])
             self.on_next_measure()
             return
 
-        self.chord_code = text
+        self.chord_codes = text
         try:
-            codes = parse_multimeasure_code(text)[0]
-        except KeyError:
+            self.chords = chord_hand.settings.decoder.decode_measure(text)
+        except ValueError:
             self.chords = []
             self.chord_symbol_label.setText("ERROR")
             self.chord_symbol_label.setToolTip("ERROR")
             return
 
-        self.chords = list(map(decode, codes))
         self._set_chord_symbol_label(self.chords)
 
-    def on_region_field_edited(self, text):
+    def on_region_tonic_activated(self, _):
+        text = self.region_tonic_combobox.currentText()
         if not text:
-            self.region = ""
             self.region_code = ""
             self.set_region(None, inherited=False)
             self.update_other_cell_regions()
-        elif text and text[-1] == " ":
-            self.region_label.setText(text[:-1])
-            self.on_next_measure()
-        else:
-            self.region_code = text
-            self.set_region(HarmonicRegion.from_string(text), inherited=False)
+            return
+
+        self.region_code = text
+
+        tonic_step = chord_hand.analysis.NOTE_NAME_TO_STEP[text[0]]
+        tonic_chroma = chord_hand.analysis.SIGN_TO_CHROMA[text[1]] if len(text) > 1 else 0
+        tonic = Note(tonic_step, tonic_chroma)
+
+        modality_str = self.region_modality_combobox.currentText()
+        if not modality_str:
+            self.region_modality_combobox.setCurrentText('major')
+            modality_str = 'major'
+        modality = Modality.MINOR if modality_str == 'minor' else Modality.MAJOR
+
+        self.set_region(HarmonicRegion(tonic, modality), inherited=False)
+        self.update_other_cell_regions()
+
+    def on_region_modality_activated(self, _):
+        text = self.region_modality_combobox.currentText()
+        if not text:
+            self.region_code = ""
+            self.set_region(None, inherited=False)
             self.update_other_cell_regions()
+            return
+
+        self.region_code = text
+        modality = Modality.MINOR if text == 'minor' else Modality.MAJOR
+
+        if not self.region_tonic_combobox.currentText():
+            return
+
+        self.set_region(HarmonicRegion(self.region.tonic, modality), inherited=False)
+        self.update_other_cell_regions()
 
     def on_analytic_type_combobox_edited(self, value):
         if self.harmonic_analysis:
@@ -215,6 +263,7 @@ class Cell:
             analytic_type = self.analytic_type_combobox.currentData()
         analyses = []
         if not self.region:
+            self.set_analysis(None)
             return
         for chord in self.chords:
             analysis = chord_hand.analysis.analyze(chord, self.region, analytic_type)
@@ -223,4 +272,4 @@ class Cell:
         self.set_analysis(analyses)
 
     def __repr__(self):
-        return f"Cell{self.n, self.chord_code}"
+        return f"Cell{self.n, self.chord_codes}"

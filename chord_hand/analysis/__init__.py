@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import chord_hand.ui
-from chord_hand.analysis.modality import Modality
+from chord_hand.analysis.modality import Modality, tonic_to_scale_step_chroma, get_scale_step_chroma
 from chord_hand.chord.chord import Chord, RepeatChord
 from chord_hand.chord.note import Note
 from chord_hand.chord.quality import ChordQuality, CustomChordQuality
@@ -40,7 +40,7 @@ class HarmonicAnalysis:
         if self.relative_to_chroma == 12:
             self.relative_to_chroma = 0
 
-    def __str__(self):
+    def to_symbol(self):
         if self.type.name == 'I':  # diatonic case
             return CHROMA_TO_SIGN[self.chroma] + STEP_TO_ROMAN[self.step] + self.quality.to_symbol()
         else:  # other analytic types
@@ -74,7 +74,7 @@ class HarmonicAnalysis:
 
 NOTE_NAME_TO_STEP = {"C": 0, "D": 1, "E": 2, "F": 3, "G": 4, "A": 5, "B": 6}
 STEP_TO_NOTE_NAME = {v: k for k, v in NOTE_NAME_TO_STEP.items()}
-SIGN_TO_CHROMA = {"##": 2, "#": 1, "b": -1, "bb": -2, "": 0}
+SIGN_TO_CHROMA = {"###": 3, "##": 2, "#": 1, "b": -1, "bb": -2, "bbb": -3, "": 0}
 CHROMA_TO_SIGN = {v: k for k, v in SIGN_TO_CHROMA.items()}
 STEP_TO_ROMAN = {
     0: "I",
@@ -119,16 +119,24 @@ def int_to_chroma(n):
 def analyze(chord: Chord, region: HarmonicRegion, analytic_type: AnalyticType | None = None):
     if isinstance(chord, RepeatChord):
         return str(chord)
-
-    if not region or not chord or chord.quality.name == 'ERROR' or isinstance(chord.quality, CustomChordQuality):
+    elif not region or not chord:
         return None
+    elif isinstance(chord, Note):
+        return None
+    elif isinstance(chord.quality, CustomChordQuality):
+        return None
+    elif not chord or chord.quality.name == 'ERROR':
+        return None
+
     chord_step = (chord.root.step - region.tonic.step) % 7
-    chord_chroma = -(region.tonic.chroma - chord.root.chroma)
+    scale_step_chroma = get_scale_step_chroma(region.tonic.step, region.tonic.chroma)[chord_step]
+    chord_chroma = chord.root.chroma - scale_step_chroma
     chord_pc = chord.root.to_pitch_class()
     if not analytic_type:
-        default_analyses = default_analyses_major if region.modality == Modality.MAJOR else default_analyses_minor
+        # default_analyses = default_analyses_major if region.modality == Modality.MAJOR else default_analyses_minor
+        default_analyses = default_analyses_major  # considering using a single table
         analytic_type = name_to_analytic_type[
-            default_analyses[(chord_step, chord_chroma)].get(
+            default_analyses.get((chord_step, chord_chroma), {}).get(
                 chord.quality, 'I'
             )
         ]

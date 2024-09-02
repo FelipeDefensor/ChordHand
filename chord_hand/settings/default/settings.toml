@@ -1,0 +1,4 @@
+[encoding]
+standard = ["encoding.standard.StandardEncoder", "encoding.standard.StandardDecoder"]
+projeto_mpb = ["encoding.projeto_mpb.ProjetoMPBEncoder", "encoding.projeto_mpb.ProjetoMPBDecoder"]
+active = "standard"

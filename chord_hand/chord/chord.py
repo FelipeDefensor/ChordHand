@@ -15,18 +15,17 @@ class Chord:
         if not self.bass:
             self.bass = self.root
 
-    def __str__(self):
-        return (
-            str(self.root)
-            + self.quality.to_symbol()
-            + (f"/{str(self.bass)}" if self.is_inverted() else "")
-        )
+    def to_symbol(self):
+        root_symbol = self.root.to_symbol()
+        quality_symbol = self.quality.to_symbol()
+        bass_symbol = f"/{self.bass.to_symbol()}" if self.is_inverted() else ""
+        if root_symbol is None or quality_symbol is None or bass_symbol is None:
+            return None
+
+        return root_symbol + quality_symbol + bass_symbol
 
     def is_inverted(self):
         return self.bass != self.root
-
-    def to_string(self):
-        return f"Chord({self.root.to_string()}, {self.quality.to_string()}, {self.bass.to_string()})"
 
     def to_dict(self):
         return {
@@ -37,7 +36,7 @@ class Chord:
 
     @classmethod
     def from_dict(cls, data):
-        is_quality_custom = data['quality'].pop('custom') 
+        is_quality_custom = data['quality'].pop('custom')
         return Chord(
             root=Note(**data['root']),
             quality=ChordQuality(**data['quality']) if not is_quality_custom else CustomChordQuality(**data['quality']),
@@ -54,6 +53,9 @@ class NoChord:
 
 
 class RepeatChord:
+    def __init__(self):
+        print()
+
     def __str__(self):
         return "%"
 

@@ -2,7 +2,14 @@ import ast
 import csv
 import re
 from pathlib import Path
+import tomllib
+import importlib
+import shutil
 
+from chord_hand.dirs import SETTINGS_DIR
+
+decoder = None
+encoder = None
 chord_quality_to_symbol = {}
 chord_quality_to_chordal_type = {}
 key_to_chord_quality = {}
@@ -13,11 +20,38 @@ name_to_analytic_type = {}
 analytic_type_args_to_projeto_mpb_code = {}
 
 
+def my_import(name):
+    # adapted from https://stackoverflow.com/a/547867/15862653
+    components = name.split('.')
+    mod = importlib.import_module('chord_hand.' + components[0])
+    for comp in components[1:]:
+        mod = getattr(mod, comp)
+    return mod
+
+
+def init_settings_folder():
+    if not SETTINGS_DIR.exists():
+        shutil.copytree(Path(__file__).parent / 'default', SETTINGS_DIR, dirs_exist_ok=True)
+
+
+def init_decoder_and_encoder():
+    with open(SETTINGS_DIR / 'settings.toml', 'rb') as f:
+        data = tomllib.load(f)
+
+    active = data['encoding']['active']
+    encoder_cls, decoder_cls = my_import(data['encoding'][active][0]), my_import(data['encoding'][active][1])
+    global encoder, decoder
+    encoder = encoder_cls()
+    decoder = decoder_cls()
+
+    print(f"Using {encoder} for encoding and {decoder} for decoding.")
+
+
 def init_chord_symbols():
     from chord_hand.chord.quality import ChordQuality
 
     # Should be called by main, hence 'settings' must be in the path
-    with open(Path(__file__).parent / 'chord_symbols.csv', 'r', newline='', encoding='utf-8') as f:
+    with open(SETTINGS_DIR / 'chord_symbols.csv', 'r', newline='', encoding='utf-8') as f:
         reader = csv.reader(f)
         next(reader, None)  # skip header
         for raw_quality, symbol in reader:
@@ -30,7 +64,7 @@ def init_chordal_type():
     from chord_hand.chord.quality import ChordQuality
 
     # Should be called by main, hence 'settings' must be in the path
-    with open(Path(__file__).parent / 'chordal_types.csv', 'r', newline='', encoding='utf-8') as f:
+    with open(SETTINGS_DIR / 'chordal_types.csv', 'r', newline='', encoding='utf-8') as f:
         reader = csv.reader(f)
         next(reader, None)  # skip header
         for raw_quality, raw_chordal_type in reader:
@@ -44,7 +78,7 @@ def init_keymap():
     from chord_hand.chord.quality import ChordQuality
 
     # Should be called by main, hence 'settings' must be in the path
-    with open(Path(__file__).parent / 'keymap.csv', 'r', newline='', encoding='utf-8') as f:
+    with open(SETTINGS_DIR / 'keymap.csv', 'r', newline='', encoding='utf-8') as f:
         reader = csv.reader(f)
         next(reader, None)  # skip header
         for key, raw_chord_quality in reader:
@@ -61,11 +95,11 @@ def init_default_analyses():
 
     # Should be called by main, hence 'settings' must be in the path
     args = [
-        ('default_analyses_major', default_analyses_major),
-        ('default_analyses_minor', default_analyses_minor)
+        ('default_analyses', default_analyses_major),
+        # ('default_analyses_minor', default_analyses_minor)
     ]
     for filename, default_analyses in args:
-        with open(Path(__file__).parent / f'{filename}.csv', 'r', newline='', encoding='utf-8') as f:
+        with open(SETTINGS_DIR / f'{filename}.csv', 'r', newline='', encoding='utf-8') as f:
             reader = csv.reader(f)
             next(reader, None)  # skip symbol line
             quality_strings = next(reader)[3:]
@@ -76,11 +110,11 @@ def init_default_analyses():
                 default_analyses[(int(step), int(chroma))] = dict(zip(qualities, analyses))
 
 
-def init_analytical_types():
+def init_analytic_types():
     from chord_hand.analysis import AnalyticType
 
     # Should be called by main, hence 'settings' must be in the path
-    with open(Path(__file__).parent / 'analytic_types.csv', 'r', newline='', encoding='utf-8') as f:
+    with open(SETTINGS_DIR / 'analytic_types.csv', 'r', newline='', encoding='utf-8') as f:
         reader = csv.reader(f)
         next(reader, None)  # skip header
 
@@ -106,7 +140,7 @@ def init_projeto_mpb_function_codes():
     analytic_type_args_to_projeto_mpb_code[Modality.MAJOR] = {}
     analytic_type_args_to_projeto_mpb_code[Modality.MINOR] = {}
 
-    with open(Path(__file__).parent / 'projeto_mpb_function_codes.csv', 'r', newline='', encoding='utf-8') as f:
+    with open(SETTINGS_DIR / 'projeto_mpb_function_codes.csv', 'r', newline='', encoding='utf-8') as f:
         reader = csv.reader(f)
         next(reader, None)  # skip header
         for function, analytic_type_string, step, major_chroma, minor_chroma, major_qualities, minor_qualities, code in reader:

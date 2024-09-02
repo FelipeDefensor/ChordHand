@@ -45,6 +45,7 @@ class ChordQuality:
         if string[0] == cls.NAME_ONLY_INDICATOR:
             return cls("", "", name=string[1:])
         args = []
+        string = string.ljust(9, '_')  # this may hide some errors. let's make sure to test properly
         for char in string:
             args.append(char if char != "_" else "")
         return cls(*args)
@@ -67,10 +68,14 @@ class ChordQuality:
             return chord_hand.settings.chord_quality_to_symbol[self]
         except KeyError:
             print(f"No symbol found for {self}")
-            return "ERROR"
+            return None
 
     def to_chordal_type(self):
-        return chord_hand.settings.chord_quality_to_chordal_type[self]
+        try:
+            return chord_hand.settings.chord_quality_to_chordal_type[self]
+        except KeyError:
+            print(f"No chordal type found for {self}")
+            return None
 
     def to_dict(self):
         return self.__dict__ | {'custom': False}

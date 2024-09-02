@@ -17,8 +17,11 @@ class Note:
     step: int
     chroma: int
 
-    def __str__(self):
-        return STEP_TO_NAME[self.step] + CHROMA_TO_SIGN[self.chroma]
+    def to_symbol(self):
+        try:
+            return STEP_TO_NAME[self.step] + CHROMA_TO_SIGN[self.chroma]
+        except KeyError:
+            return None
 
     def to_string(self):
         return (

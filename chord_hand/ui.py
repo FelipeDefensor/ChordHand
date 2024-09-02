@@ -6,7 +6,7 @@ import traceback
 
 import pandas as pd
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
+from PyQt6.QtGui import QColor, QIcon, QPixmap
 from PyQt6.QtWidgets import (
     QMainWindow,
     QVBoxLayout,
@@ -23,11 +23,7 @@ import chord_hand.projeto_mpb
 from chord_hand.analysis import HarmonicAnalysis
 from chord_hand.cell import CELL_WIDTH, Cell
 from chord_hand.chord.chord import Chord
-from chord_hand.chord.decode import (
-    decode,
-    decode_chord_code_sequence,
-)
-from chord_hand.chord.encode import encode_measure
+from chord_hand.encoding.common import decode_chord_code_sequence
 from chord_hand.chord.quality import CustomChordQuality
 from chord_hand.crash_dialog import CrashDialog
 
@@ -108,24 +104,6 @@ class MainWindow(QMainWindow):
             self.chord_symbols_view_as_text,
         )
 
-        analysis_menu = self.menuBar().addMenu('Analysis')
-        analyze_action = analysis_menu.addAction("Analyze")
-        analyze_action.triggered.connect(self.analyze_harmonies)
-        analyze_action.setShortcut('Ctrl+Shift+A')
-
-        # init_field_menu(
-        #     "Analysis",
-        #     self.load_chord_symbols_from_text,
-        #     self.load_chord_symbols_from_file,
-        #     self.chord_symbols_to_text,
-        # )
-        # init_field_menu(
-        #     "Region",
-        #     self.load_chord_symbols_from_text,
-        #     self.load_chord_symbols_from_file,
-        #     self.chord_symbols_to_text,
-        # )
-
         cell_menu = self.menuBar().addMenu("Cell")
 
         insert_action = cell_menu.addAction("Insert")
@@ -133,6 +111,12 @@ class MainWindow(QMainWindow):
 
         remove_action = cell_menu.addAction("Remove")
         remove_action.triggered.connect(self.on_remove)
+
+        help_menu = self.menuBar().addMenu("Help")
+
+        encoding_help_action = help_menu.addAction("Encoding")
+        encoding_help_action.triggered.connect(self.on_encoding_help)
+
 
     def init_cells(self):
         if not self.chords:
@@ -142,7 +126,7 @@ class MainWindow(QMainWindow):
                     self.on_next_measure,
                     self.update_regions,
                     self.field_types,
-                    chord_code="",
+                    chords=[]
                 )
             )
             return
@@ -154,7 +138,7 @@ class MainWindow(QMainWindow):
                     self.on_next_measure,
                     self.update_regions,
                     self.field_types,
-                    chord_code=encode_measure(chords),
+                    chords=chords
                 )
             )
 
@@ -177,16 +161,6 @@ class MainWindow(QMainWindow):
                 current_region = cell.region
             else:
                 cell.set_region(current_region, inherited=True)
-
-    def get_active_harmonic_region(self, cell):
-        if cell.region_code:
-            return HarmonicRegion.from_string(cell.region_code)
-        elif self.cells.index(cell) == 0:
-            return None
-        else:
-            return self.get_active_harmonic_region(
-                self.cells[self.cells.index(cell) - 1]
-            )
 
     def clear(self):
         for cell in self.cells.copy():
@@ -228,10 +202,10 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def get_chord_codes(self):
-        return " ".join([c.chord_code for c in self.cells])
+        return " ".join([c.chord_codes for c in self.cells])
 
     def get_chords(self):
-        return decode_chord_code_sequence(self.get_chord_codes())
+        return [cell.chords for cell in self.cells]
 
     def get_regions(self):
         return [cell.region for cell in self.cells]
@@ -241,9 +215,6 @@ class MainWindow(QMainWindow):
 
     def get_are_analytic_types_locked(self):
         return [cell.is_analytic_type_locked for cell in self.cells]
-
-    def get_decoded_chords(self):
-        return list(map(decode, chord) for chord in self.chords)
 
     def get_chord_symbols(self):
         return [list(map(str, measure)) for measure in self.get_chords()]
@@ -301,10 +272,13 @@ class MainWindow(QMainWindow):
             self.cells[int(n)].set_chords(list(map(Chord.from_dict, data)))
 
     def load_regions(self, n_to_data):
+        cur_data = {}
         for n, data in n_to_data.items():
             if not data:
                 continue
-            self.cells[int(n)].set_region(HarmonicRegion.from_dict(data), inherited=False)
+            if data != cur_data:
+                self.cells[int(n)].set_region(HarmonicRegion.from_dict(data), inherited=False)
+                cur_data = data.copy()
         self.update_regions()
 
     def load_analyses(self, n_to_data):
@@ -315,19 +289,12 @@ class MainWindow(QMainWindow):
             if not data:
                 continue
             self.cells[int(n)].set_is_analytic_type_locked(data.pop('analytic_type_locked'))
-            self.cells[int(n)].set_analysis(list(map(analysis_from_data, data['analyses'])))
-
-    @staticmethod
-    def get_music_title():
-        return QInputDialog().getText(None, "Save", "Insert music title")
+            if analyses := data['analyses']:
+                self.cells[int(n)].set_analysis(list(map(analysis_from_data, analyses)))
 
     def save_as_json(self):
-        name, success = self.get_music_title()
-        if not success:
-            return
-
         path, success = QFileDialog.getSaveFileName(
-            None, "Save", name.replace(" ", "_").lower() + ".json", "*.json"
+            None, "Save", "untitled.json", "*.json"
         )
         if not success:
             return
@@ -335,7 +302,6 @@ class MainWindow(QMainWindow):
         with open(path, "w") as file:
             json.dump(
                 {
-                    "title": name,
                     "chords": self.get_serialized_chords(),
                     "analyses": self.get_serialized_analyses(),
                     "regions": self.get_serialized_regions(),
@@ -348,29 +314,41 @@ class MainWindow(QMainWindow):
             csv_writer = csv.writer(f)
             for i, (chords, analyses, region) in enumerate(itertools.zip_longest(self.get_chords(), self.get_analyses(), self.get_regions())):
                 for j, (chord, analysis) in enumerate(itertools.zip_longest(chords, analyses)):
-                    is_quality_custom = isinstance(chord.quality, CustomChordQuality)
-                    csv_writer.writerow([
-                        chord.root.to_pitch_class(),  # fundamental
-                        chord.bass.to_pitch_class(),  # baixo
-                        ord(chord.quality.to_chordal_type()[0]) if not is_quality_custom else '',  # genus
-                        chord.quality.to_chordal_type()[1] if not is_quality_custom else '',  # variante
-                        chord_hand.projeto_mpb.analysis_to_projeto_mpb_code(analysis, region.modality) if region and not is_quality_custom else '',  # função harmônica
-                        (i + 1) + j / len(chords),  # compasso.fração
-                        str(chord),  # símbolo (para facilitar a leitura)
-                        str(region.tonic) if region else '',  # tonalidade
-                        str(region.modality) if region else '',  # modalidade
-                    ])
+                    position = round((i + 1) + j / len(chords), 3)  # compasso.fração
+                    symbol = chord.to_symbol() if chord else ''
+                    region_symbol = region.to_symbol() if region else ''
+                    if chord and isinstance(chord, Chord):  # incomplete code will result in a Note instead
+                        is_quality_custom = isinstance(chord.quality, CustomChordQuality)
+                        row = [
+                            chord.root.to_pitch_class(),  # fundamental
+                            chord.bass.to_pitch_class(),  # baixo
+                            ord(chord.quality.to_chordal_type()[0]) if not is_quality_custom else '',  # genus
+                            chord.quality.to_chordal_type()[1] if not is_quality_custom else '',  # variante
+                            chord_hand.projeto_mpb.analysis_to_projeto_mpb_code(
+                                analysis, region.modality if region_symbol else ''
+                            ) if region_symbol and not is_quality_custom else '',
+                            # função harmônica
+                            position,  # compasso.fração
+                            symbol,  # símbolo
+                            region_symbol,  # região
+                        ]
+                    else:
+                        row = ['', '', '', '', '', position, symbol, region_symbol]
+
+                    csv_writer.writerow(row)
 
     def write_csv_tilia(self, path):
         with open(path, 'w', newline='', encoding='utf-8') as f:
             csv_writer = csv.writer(f)
-            csv_writer.writerow(['measure', 'fraction', 'label'])
-            for i, measure in enumerate(self.get_chords()):
-                for j, chord in enumerate(measure):
+            csv_writer.writerow(['measure', 'fraction', 'label', 'region', 'analyses'])
+            for i, (chords, region, analyses) in enumerate(itertools.zip_longest(self.get_chords(), self.get_regions(), self.get_analyses())):
+                for j, chord in enumerate(chords):
                     csv_writer.writerow([
                         i + 1,
-                        (j / len(measure)) % 1,
-                        str(chord)
+                        (j / len(chords)) % 1,
+                        chord.to_symbol() if chord else '',
+                        region.tonic.to_symbol() if region else '',
+                        " ".join([a.to_symbol() for a in analyses]) if (analyses and region) else '',
                     ])
 
     def write_txt(self, path):
@@ -378,7 +356,7 @@ class MainWindow(QMainWindow):
             f.write('CHORDS: ')
             for measure in self.get_chords():
                 for chord in measure:
-                    f.write(str(chord) + ' ')
+                    f.write(chord.to_symbol() if chord else '?' + ' ')
                 f.write(' | ')
             f.write('\n')
 
@@ -396,8 +374,6 @@ class MainWindow(QMainWindow):
                 for analysis in measure:
                     f.write(str(analysis) + ' ')
                 f.write(' | ')
-
-
 
     @staticmethod
     def get_file_save_path(initial, name_filter):
@@ -419,6 +395,8 @@ class MainWindow(QMainWindow):
             display_error('Export error', traceback.format_exc())
 
     def export_as_tilia(self):
+        self.analyze_harmonies()
+
         path, success = self.get_file_save_path('untitled.csv', '*.csv')
         if not success:
             return
@@ -445,6 +423,7 @@ class MainWindow(QMainWindow):
         self.scene.removeItem(cell.proxy)
         for c in self.cells[index:]:
             c.set_n(c.n - 1)
+        self.cells.pop(index)
         self.position_widgets()
 
     def insert_cell(self, index):
@@ -453,7 +432,7 @@ class MainWindow(QMainWindow):
             self.on_next_measure,
             self.update_regions,
             self.field_types,
-            chord_code="",
+            chords=[]
         )
         self.cells.insert(index, cell)
         self.add_cell_to_scene(cell)
@@ -484,21 +463,24 @@ class MainWindow(QMainWindow):
             self.position_cell(cell)
             cell.proxy.setZValue(-cell.n)
 
-    def get_active_harmonic_regions(self):
-        harmonic_regions = []
-        previous_region = None
-        for cell in self.cells:
-            if cell.region:
-                harmonic_regions.append(cell.region)
-                previous_region = cell.region
-            else:
-                harmonic_regions.append(previous_region)
-
-        return harmonic_regions
-
     def analyze_harmonies(self):
         for cell in self.cells:
             cell.analyze_harmonies()
+
+    def on_encoding_help(self):
+        class EncodingHelp(QLabel):
+            def __init__(self, img1_path, img2_path):
+                super().__init__()
+                self.pixmap1 = QPixmap(img1_path)
+                self.pixmap2 = QPixmap(img2_path)
+                self.setPixmap(self.pixmap1)
+
+            def toggle_pixmap(self):
+                self.setPixmap(self.pixmap2 if self.pixmap() == self.pixmap1 else self.pixmap1)
+        widget = EncodingHelp('./img/kb-layout-qualities-combined.png', '')
+
+        self.encoding_help_window = widget
+        widget.show()
 
 
 def serialize_chord(chord):

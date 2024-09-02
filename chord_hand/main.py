@@ -3,9 +3,21 @@ import traceback
 
 from PyQt6.QtWidgets import QApplication
 
-import chord_hand.settings
 from chord_hand import ui
 from chord_hand.ui import MainWindow
+from chord_hand.settings import init_decoder_and_encoder, init_chord_symbols, init_chordal_type, init_keymap, \
+    init_default_analyses, init_analytic_types, init_projeto_mpb_function_codes, init_settings_folder
+
+
+def init_settings():
+    init_settings_folder()
+    init_decoder_and_encoder()
+    init_chord_symbols()
+    init_chordal_type()
+    init_keymap()
+    init_default_analyses()
+    init_analytic_types()
+    init_projeto_mpb_function_codes()
 
 
 def main():
@@ -16,12 +28,7 @@ def main():
         print(mw.get_chord_codes())
         app.exit(1)
 
-    chord_hand.settings.init_chord_symbols()
-    chord_hand.settings.init_chordal_type()
-    chord_hand.settings.init_keymap()
-    chord_hand.settings.init_default_analyses()
-    chord_hand.settings.init_analytical_types()
-    chord_hand.settings.init_projeto_mpb_function_codes()
+    init_settings()
 
     app = QApplication(sys.argv)
     mw = MainWindow()

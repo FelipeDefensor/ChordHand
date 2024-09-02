@@ -41,7 +41,6 @@ CODE_TO_NOTE = {
     "<": Note(5, -2),
     ".": Note(6, -1),
     ">s": Note(6, -2),
-    ";": NoChord(),
     # error
     "?": Note(-1, 0),
 }
