@@ -447,6 +447,60 @@ class MainWindow(QMainWindow):
         widget.show()
 
 
+class ProjetoMPBMainWindow(MainWindow):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        projeto_mpb_menu = self.menuBar().addMenu('Projeto MPB')
+
+        export_as_projeto_mpb_action = projeto_mpb_menu.addAction('Export as CSV...')
+        export_as_projeto_mpb_action.triggered.connect(self.export_as_projeto_mpb)
+
+    def export_as_projeto_mpb(self):
+        self.analyze_harmonies()
+
+        path, success = self.get_file_save_path('untitled.csv', '*.csv')
+        if not success:
+            return
+
+        try:
+            self.write_csv_projeto_mpb(path)
+            pd.read_csv(path, header=None).T.to_csv(path, header=False, index=False)
+        except:
+            display_error('Export error', traceback.format_exc())
+
+    def write_csv_projeto_mpb(self, path):
+        from chord_hand.chord.quality import CustomChordQuality
+        from chord_hand.projeto_mpb import analysis_to_projeto_mpb_code
+
+        with open(path, 'w', newline='', encoding='utf-8') as f:
+            csv_writer = csv.writer(f)
+            for i, (chords, analyses, region) in enumerate(itertools.zip_longest(self.get_chords(), self.get_analyses(), self.get_regions())):
+                for j, (chord, analysis) in enumerate(itertools.zip_longest(chords, analyses)):
+                    position = round((i + 1) + j / len(chords), 3)  # compasso.fração
+                    symbol = chord.to_symbol() if chord else ''
+                    region_symbol = region.to_symbol() if region else ''
+                    if chord and isinstance(chord, Chord):  # incomplete code will result in a Note instead
+                        is_quality_custom = isinstance(chord.quality, CustomChordQuality)
+                        row = [
+                            chord.root.to_pitch_class(),  # fundamental
+                            chord.bass.to_pitch_class(),  # baixo
+                            ord(chord.quality.to_chordal_type()[0]) if not is_quality_custom else '',  # genus
+                            chord.quality.to_chordal_type()[1] if not is_quality_custom else '',  # variante
+                            analysis_to_projeto_mpb_code(
+                                analysis, region.modality if region_symbol else ''
+                            ) if region_symbol and not is_quality_custom else '',
+                            # função harmônica
+                            position,  # compasso.fração
+                            symbol,  # símbolo
+                            region_symbol,  # região
+                        ]
+                    else:
+                        row = ['', '', '', '', '', position, symbol, region_symbol]
+
+                    csv_writer.writerow(row)
+
+
 def serialize_chord(chord):
     if not chord:
         return "RepeatChord()"
