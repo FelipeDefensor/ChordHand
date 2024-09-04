@@ -32,7 +32,7 @@ def test_analyses_symbol_chroma_c_major(step, chroma):
     chord = Chord(Note(step, chroma), ChordQuality('M', 'p'))
     region = HarmonicRegion(Note(0, 0), Modality.MAJOR)
     analytic_type = AnalyticType('I', 0, 0)
-    assert analyze(chord, region, analytic_type).to_symbol(region.tonic.step, region.tonic.chroma) == CHROMA_TO_SIGN[
+    assert analyze(chord, region, analytic_type).to_symbol() == CHROMA_TO_SIGN[
         chroma] + STEP_TO_ROMAN[step]
 
 
@@ -43,7 +43,7 @@ def test_analyses_symbol_chroma_e_major(step, chroma):
     region = HarmonicRegion(Note(2, 0), Modality.MAJOR)
     analytic_type = AnalyticType('I', 0, 0)
     absolute_step = (step - 2) % 7
-    assert analyze(chord, region, analytic_type).to_symbol(2, 0) == CHROMA_TO_SIGN[
+    assert analyze(chord, region, analytic_type).to_symbol() == CHROMA_TO_SIGN[
         chroma - scale_chromas[absolute_step]] + STEP_TO_ROMAN[absolute_step]
 
 
@@ -54,5 +54,5 @@ def test_analyses_symbol_chroma_ab_major(step, chroma):
     region = HarmonicRegion(Note(5, -1), Modality.MAJOR)
     analytic_type = AnalyticType('I', 0, 0)
     absolute_step = (step - 5) % 7
-    assert analyze(chord, region, analytic_type).to_symbol(5, -1) == CHROMA_TO_SIGN[
+    assert analyze(chord, region, analytic_type).to_symbol() == CHROMA_TO_SIGN[
         chroma - scale_chromas[absolute_step]] + STEP_TO_ROMAN[absolute_step]
