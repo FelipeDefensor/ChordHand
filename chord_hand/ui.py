@@ -2,6 +2,8 @@ from __future__ import annotations
 import csv
 import itertools
 import json
+import subprocess
+import sys
 import traceback
 
 import pandas as pd
@@ -22,6 +24,7 @@ from PyQt6.QtWidgets import (
 from chord_hand.analysis import HarmonicAnalysis
 from chord_hand.cell import CELL_WIDTH, Cell
 from chord_hand.chord.chord import Chord
+from chord_hand.dirs import SETTINGS_DIR
 from chord_hand.encoding.common import decode_chord_code_sequence
 from chord_hand.crash_dialog import CrashDialog
 
@@ -92,6 +95,11 @@ class MainWindow(QMainWindow):
 
             to_text_action = file_menu.addAction("View as text...")
             to_text_action.triggered.connect(view_as_text_func)
+
+            file_menu.addSeparator()
+
+            settings_action = file_menu.addAction("Settings...")
+            settings_action.triggered.connect(self.open_settings)
 
         init_file_menu(
             self.load_chord_symbols_from_text,
@@ -381,6 +389,19 @@ class MainWindow(QMainWindow):
             self.write_txt(path)
         except:
             display_error('Export error', traceback.format_exc())
+
+    @staticmethod
+    def open_settings():
+        path = SETTINGS_DIR / 'settings.toml'
+
+        if sys.platform == "win32":
+            subprocess.Popen(["start", path.resolve()], shell=True)
+        elif sys.platform == "linux":
+            subprocess.Popen(["xdg-open", str(path)])  # shell=True breaks command on linux
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", path.resolve()], shell=True)
+        else:
+            raise OSError(f"Unsupported platform: {sys.platform}")
 
     def remove_cell(self, index):
         cell = self.cells[index]
