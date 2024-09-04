@@ -29,6 +29,7 @@ from chord_hand.encoding.common import decode_chord_code_sequence
 from chord_hand.crash_dialog import CrashDialog
 
 from chord_hand.analysis.harmonic_region import HarmonicRegion
+from chord_hand.encoding.standard import StandardEncoder
 
 LINE_LENGTH = 4
 FIELD_HEIGHT = 40
@@ -462,7 +463,10 @@ class MainWindow(QMainWindow):
 
             def toggle_pixmap(self):
                 self.setPixmap(self.pixmap2 if self.pixmap() == self.pixmap1 else self.pixmap1)
-        widget = EncodingHelp('./img/kb-layout-qualities-combined.png', '')
+
+        from chord_hand.settings import encoder
+        img_path = './img/kb-layout-qualities-combined.png' if isinstance(encoder, StandardEncoder) else './img/projeto_mpb_codes_help.png'
+        widget = EncodingHelp(img_path, '')
 
         self.encoding_help_window = widget
         widget.show()

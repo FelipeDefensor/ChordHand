@@ -44,8 +44,6 @@ def init_decoder_and_encoder():
     encoder = encoder_cls()
     decoder = decoder_cls()
 
-    print(f"Using {encoder} for encoding and {decoder} for decoding.")
-
 
 def init_chord_symbols():
     from chord_hand.chord.quality import ChordQuality
