@@ -6,7 +6,7 @@ import traceback
 
 import pandas as pd
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor, QIcon, QPixmap
+from PyQt6.QtGui import QPixmap, QPalette
 from PyQt6.QtWidgets import (
     QMainWindow,
     QVBoxLayout,
@@ -45,14 +45,13 @@ class MainWindow(QMainWindow):
             Cell.FieldType.CHORD_SYMBOLS, Cell.FieldType.HARMONIC_REGION, Cell.FieldType.HARMONIC_ANALYSIS,
             Cell.FieldType.ANALYTICAL_TYPE)):
         super().__init__()
-        self.resize(800, 240)
+        self.resize(800, 800)
         self.setWindowTitle('ChordHand')
         self.chords = [[]]
         self.field_types = field_types
         self.chord_quality_to_symbol = {}
         self.cells = []
         self.scene = QGraphicsScene()
-        self.scene.setBackgroundBrush(QColor('#f0f0f0'))
         self.view = QGraphicsView()
         self.view.setScene(self.scene)
         self.setCentralWidget(self.view)
@@ -61,6 +60,7 @@ class MainWindow(QMainWindow):
         self.init_cells()
         self.add_widgets()
         self.position_widgets()
+        self.set_background_color()
         self.show()
 
     def init_menus(self):
@@ -136,17 +136,15 @@ class MainWindow(QMainWindow):
                 )
             )
 
-    def resize_to_fit_cells(self):
-        width = min(max(self.scene.width() + 20, self.width()), 800)
-        height = min(max(self.scene.height() + 80, self.height()), 800)
-        self.resize(int(width), int(height))
+    def set_background_color(self):
+        color = self.cells[0].widget.palette().color(QPalette.ColorRole.Window)
+        self.scene.setBackgroundBrush(color)
 
     def on_next_measure(self, cell):
         next_index = self.cells.index(cell) + 1
         if next_index == len(self.cells):
             self.insert_cell(len(self.cells))
         self.cells[next_index].set_focus()
-        self.resize_to_fit_cells()
 
     def update_regions(self):
         current_region = None
