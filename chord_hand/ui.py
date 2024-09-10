@@ -22,7 +22,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
 )
 
-from chord_hand.analysis import HarmonicAnalysis
+from chord_hand.analysis import HarmonicAnalysis, Modality
 from chord_hand.cell import CELL_WIDTH, Cell
 from chord_hand.chord.chord import Chord
 from chord_hand.dirs import SETTINGS_DIR
@@ -518,6 +518,8 @@ class ProjetoMPBMainWindow(MainWindow):
                                 analysis, region.modality if region_symbol else ''
                             ) if region_symbol and not is_quality_custom else '',
                             # função harmônica
+                            region.tonic.to_pitch_class() if region else '',  # tônica
+                            {Modality.MAJOR: 1, Modality.MINOR: 0}[region.modality] if region else '',  # modo
                             position,  # compasso.fração
                             symbol,  # símbolo
                             region_symbol,  # região
