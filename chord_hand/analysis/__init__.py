@@ -41,8 +41,8 @@ class HarmonicAnalysis:
             self.relative_to_chroma = 0
 
     def to_symbol(self):
-        if self.type.name == 'I':  # diatonic case
-            return CHROMA_TO_SIGN[self.chroma] + STEP_TO_ROMAN[self.step] + self.quality.to_symbol()
+        if self.type.name == 'I':  # 'diatonic' case
+            return CHROMA_TO_SIGN[self.chroma] + STEP_TO_ROMAN[self.step]
         else:  # other analytic types
             if self.relative_to_step:
                 try:
@@ -52,7 +52,7 @@ class HarmonicAnalysis:
                     suffix = ''
             else:
                 suffix = ''
-            return self.type.name + self.quality.to_symbol() + suffix
+            return self.type.name + suffix
 
     def to_dict(self):
         return {
