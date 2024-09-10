@@ -5,6 +5,7 @@ import json
 import subprocess
 import sys
 import traceback
+from pathlib import Path
 
 import pandas as pd
 from PyQt6.QtCore import Qt
@@ -465,8 +466,9 @@ class MainWindow(QMainWindow):
                 self.setPixmap(self.pixmap2 if self.pixmap() == self.pixmap1 else self.pixmap1)
 
         from chord_hand.settings import encoder
-        img_path = './img/kb-layout-qualities-combined.png' if isinstance(encoder, StandardEncoder) else './img/projeto_mpb_codes_help.png'
-        widget = EncodingHelp(img_path, '')
+        img_path = Path(__file__).parent / 'img'
+        filename = 'kb-layout-qualities-combined.png' if isinstance(encoder, StandardEncoder) else 'projeto_mpb_codes_help.png'
+        widget = EncodingHelp(str(img_path / filename), '')
 
         self.encoding_help_window = widget
         widget.show()

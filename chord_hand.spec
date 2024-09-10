@@ -16,6 +16,7 @@ a = Analysis(
     datas=[
         ("./README.md", "."),
         ("./chord_hand/settings", "./chord_hand/settings"),
+        ("./chord_hand/img", "./chord_hand/img"),
     ],
     hiddenimports=[],
     hookspath=None,
