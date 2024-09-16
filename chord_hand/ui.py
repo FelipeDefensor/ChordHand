@@ -1,5 +1,6 @@
 from __future__ import annotations
 import csv
+import functools
 import itertools
 import json
 import subprocess
@@ -355,7 +356,7 @@ class MainWindow(QMainWindow):
             None, 'Save', initial, name_filter
         )
 
-    def export_as_projeto_mpb(self):
+    def export_as_projeto_mpb_old_db(self):
         self.analyze_harmonies()
 
         path, success = self.get_file_save_path('untitled.csv', '*.csv')
@@ -480,54 +481,112 @@ class ProjetoMPBMainWindow(MainWindow):
 
         projeto_mpb_menu = self.menuBar().addMenu('Projeto MPB')
 
-        export_as_projeto_mpb_action = projeto_mpb_menu.addAction('Export as CSV...')
-        export_as_projeto_mpb_action.triggered.connect(self.export_as_projeto_mpb)
+        export_old_action = projeto_mpb_menu.addAction('Export as CSV (Old database)...')
+        export_old_action.triggered.connect(functools.partial(self.export_as_projeto_mpb, 'old'))
 
-    def export_as_projeto_mpb(self):
+        export_new_action = projeto_mpb_menu.addAction('Export as CSV (New database)...')
+        export_new_action.triggered.connect(functools.partial(self.export_as_projeto_mpb, 'new'))
+
+    def export_as_projeto_mpb(self, db_type):
         self.analyze_harmonies()
 
         path, success = self.get_file_save_path('untitled.csv', '*.csv')
         if not success:
             return
 
+        write_func = {
+            'old': self.write_csv_projeto_mpb_old_db,
+            'new': self.write_csv_projeto_mpb_new_db
+        }[db_type]
+
         try:
-            self.write_csv_projeto_mpb(path)
-            pd.read_csv(path, header=None).T.to_csv(path, header=False, index=False)
+            write_func(path)
+            if db_type == 'old':
+                pd.read_csv(path, header=None).T.to_csv(path, header=False, index=False)
         except:
             display_error('Export error', traceback.format_exc())
 
-    def write_csv_projeto_mpb(self, path):
+    def get_projeto_mpb_data(self):
         from chord_hand.chord.quality import CustomChordQuality
         from chord_hand.projeto_mpb import analysis_to_projeto_mpb_code
 
+        rows = []
+        for i, (chords, analyses, region) in enumerate(
+                itertools.zip_longest(self.get_chords(), self.get_analyses(), self.get_regions())):
+            for j, (chord, analysis) in enumerate(itertools.zip_longest(chords, analyses)):
+                position = round((i + 1) + j / len(chords), 3)  # compasso.fração
+                symbol = chord.to_symbol() if chord else ''
+                region_symbol = region.to_symbol() if region else ''
+                if chord and isinstance(chord, Chord):  # incomplete code will result in a Note instead
+                    is_quality_custom = isinstance(chord.quality, CustomChordQuality)
+                    row = [
+                        chord.root.to_pitch_class(),  # fundamental
+                        chord.bass.to_pitch_class(),  # baixo
+                        chord.quality if not is_quality_custom else '',  # qualidade
+                        analysis_to_projeto_mpb_code(
+                            analysis, region.modality if region_symbol else ''
+                        ) if region_symbol and not is_quality_custom else '',
+                        # função harmônica
+                        region.tonic.to_pitch_class() if region else '',  # tônica
+                        {Modality.MAJOR: 1, Modality.MINOR: 0}[region.modality] if region else '',  # modo
+                        position,  # compasso.fração
+                        symbol,  # símbolo
+                        region_symbol,  # região
+                    ]
+                else:
+                    row = ['', '', '', '', '', position, symbol, region_symbol]
+                rows.append(row)
+
+        return rows
+
+    def write_csv_projeto_mpb_new_db(self, path):
+        pmpb_path = Path(__file__).parent / 'encoding' / 'projeto_mpb'
+        lex_functions = pmpb_path / 'lex-functions.csv'
+
+        function_code_to_symbol = {}
+        with open(lex_functions, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+
+            for code, symbol in reader:
+                function_code_to_symbol[code] = symbol
+
+        data = self.get_projeto_mpb_data()
         with open(path, 'w', newline='', encoding='utf-8') as f:
             csv_writer = csv.writer(f)
-            for i, (chords, analyses, region) in enumerate(itertools.zip_longest(self.get_chords(), self.get_analyses(), self.get_regions())):
-                for j, (chord, analysis) in enumerate(itertools.zip_longest(chords, analyses)):
-                    position = round((i + 1) + j / len(chords), 3)  # compasso.fração
-                    symbol = chord.to_symbol() if chord else ''
-                    region_symbol = region.to_symbol() if region else ''
-                    if chord and isinstance(chord, Chord):  # incomplete code will result in a Note instead
-                        is_quality_custom = isinstance(chord.quality, CustomChordQuality)
-                        row = [
-                            chord.root.to_pitch_class(),  # fundamental
-                            chord.bass.to_pitch_class(),  # baixo
-                            ord(chord.quality.to_chordal_type()[0]) if not is_quality_custom else '',  # genus
-                            chord.quality.to_chordal_type()[1] if not is_quality_custom else '',  # variante
-                            analysis_to_projeto_mpb_code(
-                                analysis, region.modality if region_symbol else ''
-                            ) if region_symbol and not is_quality_custom else '',
-                            # função harmônica
-                            region.tonic.to_pitch_class() if region else '',  # tônica
-                            {Modality.MAJOR: 1, Modality.MINOR: 0}[region.modality] if region else '',  # modo
-                            position,  # compasso.fração
-                            symbol,  # símbolo
-                            region_symbol,  # região
-                        ]
-                    else:
-                        row = ['', '', '', '', '', position, symbol, region_symbol]
+            csv_writer.writerow(['corpus', 'musica', 'fundamental', 'baixo', 'cifra', 'função', 'tonica', 'modo', 'posição'])
+            for row in data:
+                corpus = ''
+                musica = ''
+                fundamental = row[0]
+                baixo = row[1]
+                tipo_acordal = row[2].to_symbol()
+                funcao = function_code_to_symbol[row[3]]
+                tonica = row[4]
+                modo = row[5]
+                posicao = row[6]
 
-                    csv_writer.writerow(row)
+                csv_writer.writerow([corpus, musica, fundamental, baixo, tipo_acordal, funcao, tonica, modo, posicao])
+
+    def write_csv_projeto_mpb_old_db(self, path):
+        from chord_hand.chord.quality import CustomChordQuality
+
+        data = self.get_projeto_mpb_data()
+
+        with open(path, 'w', newline='', encoding='utf-8') as f:
+            csv_writer = csv.writer(f)
+            for row in data:
+                is_quality_custom = isinstance(row[3], CustomChordQuality)
+
+                fundamental = row[0]
+                baixo = row[1]
+                genus = ord(row[2].to_chordal_type()[0]) if not is_quality_custom else ''
+                variante = row[2].to_chordal_type()[1] if not is_quality_custom else ''  # variante
+                funcao = row[3]
+                tonica = row[4]
+                modo = row[5]
+                posicao = row[6]
+
+                csv_writer.writerow([fundamental, baixo, genus, variante, funcao, tonica, modo, posicao])
 
 
 def serialize_chord(chord):
