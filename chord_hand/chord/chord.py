@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Union
 
 from chord_hand.chord.quality import ChordQuality, CustomChordQuality
 from chord_hand.chord.note import Note
@@ -8,7 +8,7 @@ from chord_hand.chord.note import Note
 @dataclass
 class Chord:
     root: Note
-    quality: ChordQuality | CustomChordQuality
+    quality: Union[ChordQuality, CustomChordQuality]
     bass: Optional[Note] = None
 
     def __post_init__(self):

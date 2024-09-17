@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import traceback
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 import chord_hand.ui
 from chord_hand.analysis.modality import Modality, tonic_to_scale_step_chroma, get_scale_step_chroma
@@ -116,7 +116,7 @@ def int_to_chroma(n):
     return pc if pc < 8 else pc - 12
 
 
-def analyze(chord: Chord, region: HarmonicRegion, analytic_type: AnalyticType | None = None):
+def analyze(chord: Chord, region: HarmonicRegion, analytic_type: Union[AnalyticType, None] = None):
     if isinstance(chord, RepeatChord):
         return str(chord)
     elif not region or not chord:

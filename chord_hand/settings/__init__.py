@@ -2,7 +2,7 @@ import ast
 import csv
 import re
 from pathlib import Path
-import tomllib
+import tomli
 import importlib
 import shutil
 
@@ -36,7 +36,7 @@ def init_settings_folder():
 
 def init_decoder_and_encoder():
     with open(SETTINGS_DIR / 'settings.toml', 'rb') as f:
-        data = tomllib.load(f)
+        data = tomli.load(f)
 
     active = data['encoding']['active']
     encoder_cls, decoder_cls = my_import(data['encoding'][active][0]), my_import(data['encoding'][active][1])

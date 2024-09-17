@@ -1,5 +1,6 @@
 import functools
-from enum import StrEnum, auto
+from enum import Enum, auto
+from typing import Union
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
@@ -20,7 +21,7 @@ CELL_HEIGHT = 140
 class Cell:
     LINE_EDIT_HEIGHT = 20
 
-    class FieldType(StrEnum):
+    class FieldType(Enum):
         CHORD_SYMBOLS = auto()
         HARMONIC_ANALYSIS = auto()
         HARMONIC_REGION = auto()
@@ -136,7 +137,7 @@ class Cell:
         self.n = n
         self.n_label.setText(str(n))
 
-    def set_analysis(self, analyses: list[HarmonicAnalysis] | None):
+    def set_analysis(self, analyses: Union[list[HarmonicAnalysis], None]):
         if analyses is None:
             self.harmonic_analysis = []
             self.analysis_label.setText('')
@@ -163,7 +164,7 @@ class Cell:
         self.chord_codes_line_edit.setText(self.chord_codes)
         self._set_chord_symbol_label(chords)
 
-    def set_region(self, region: HarmonicRegion | None, inherited: bool):
+    def set_region(self, region: Union[HarmonicRegion, None], inherited: bool):
         self.region = region
         self.is_region_inherited = inherited
         self.analyze_harmonies()

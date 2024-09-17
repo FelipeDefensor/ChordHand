@@ -1,9 +1,9 @@
-from enum import StrEnum, auto
+from enum import Enum
 
 
-class Modality(StrEnum):
-    MAJOR = auto()
-    MINOR = auto()
+class Modality(Enum):
+    MAJOR = 'major'
+    MINOR = 'minor'
 
 
 tonic_to_scale_step_chroma = {
