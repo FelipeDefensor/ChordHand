@@ -100,6 +100,7 @@ class Cell:
         self.region_tonic_combobox = QComboBox()
         self.region_tonic_combobox.addItems(['', 'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'])
         self.region_tonic_combobox.activated.connect(self.on_region_tonic_activated)
+        self.region_tonic_combobox.raise_()
         self.region_modality_combobox = QComboBox()
         self.region_modality_combobox.addItems(['', 'major', 'minor'])
         self.region_modality_combobox.activated.connect(self.on_region_modality_activated)
