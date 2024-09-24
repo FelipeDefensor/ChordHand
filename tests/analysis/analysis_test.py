@@ -18,14 +18,6 @@ STEP_TO_ROMAN = {
     6: 'VII',
 }
 
-CHROMA_TO_SIGN = {
-    -2: 'bb',
-    -1: 'b',
-    0: '',
-    1: '#',
-    2: '##'
-}
-
 
 @pytest.mark.parametrize('step,chroma', itertools.product(range(7), [-1, 0, 1]))
 def test_analyses_symbol_chroma_c_major(step, chroma):
