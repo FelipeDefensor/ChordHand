@@ -286,6 +286,9 @@ class MainWindow(QMainWindow):
 
     def load_analyses(self, n_to_data):
         def analysis_from_data(data):
+            if not data:
+                return None
+
             return HarmonicAnalysis.from_dict(data)
 
         for n, data in n_to_data.items():
