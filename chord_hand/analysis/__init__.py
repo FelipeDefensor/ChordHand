@@ -41,7 +41,7 @@ class HarmonicAnalysis:
             self.relative_to_chroma = 0
 
     def to_symbol(self):
-        if self.type.name == 'I':  # 'diatonic' case
+        if self.type.name == 'Aut.':  # 'diatonic' case
             return CHROMA_TO_SIGN[self.chroma] + STEP_TO_ROMAN[self.step]
         else:  # other analytic types
             if self.relative_to_step:
@@ -137,7 +137,7 @@ def analyze(chord: Chord, region: HarmonicRegion, analytic_type: Union[AnalyticT
         default_analyses = default_analyses_major  # considering using a single table
         analytic_type = name_to_analytic_type[
             default_analyses.get((chord_step, chord_chroma), {}).get(
-                chord.quality, 'I'
+                chord.quality, 'Aut.'
             )
         ]
     target_step = (chord_step + analytic_type.relative_step) % 7

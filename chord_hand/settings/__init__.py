@@ -104,7 +104,7 @@ def init_default_analyses():
             qualities = [ChordQuality.from_string(s) for s in quality_strings]
 
             for symbol, step, chroma, *analyses in reader:
-                analyses = ['I' if a == '' else a for a in analyses]
+                analyses = ['Aut.' if a == '' else a for a in analyses]
                 default_analyses[(int(step), int(chroma))] = dict(zip(qualities, analyses))
 
 
@@ -116,7 +116,7 @@ def init_analytic_types():
         reader = csv.reader(f)
         next(reader, None)  # skip header
 
-        name_to_analytic_type['I'] = AnalyticType('I', 0, 0)
+        name_to_analytic_type['Aut.'] = AnalyticType('Aut.', 0, 0)
         for name, relative_step, relative_pci in reader:
             name_to_analytic_type[name] = AnalyticType(name, int(relative_step), int(relative_pci))
 
