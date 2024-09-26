@@ -350,7 +350,7 @@ class MainWindow(QMainWindow):
             f.write('ANALYSES: ')
             for measure in self.get_analyses():
                 for analysis in measure:
-                    f.write(str(analysis) + ' ')
+                    f.write(analysis.to_symbol() + ' ')
                 f.write(' | ')
 
     @staticmethod
