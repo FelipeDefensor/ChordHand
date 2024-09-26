@@ -52,7 +52,7 @@ class HarmonicAnalysis:
                     suffix = ''
             else:
                 suffix = ''
-            return self.type.name + suffix
+            return self.type.name.replace('/','') + suffix
 
     def to_dict(self):
         return {
