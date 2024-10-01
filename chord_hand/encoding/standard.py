@@ -1,9 +1,21 @@
+from asyncio import Protocol
+
 from chord_hand.encoding.common import split_measure_codes_into_chord_codes
 from chord_hand.chord.keymap import CODE_TO_NOTE, SLASH, TEXT_MODE, NOTE_TO_CODE
 from chord_hand.chord.chord import Chord, NoChord, RepeatChord
 from chord_hand.chord.note import Note
 from chord_hand.chord.quality import ChordQuality, CustomChordQuality
 from chord_hand.settings import key_to_chord_quality
+
+
+class Encoder(Protocol):
+    def encode_measure(self, chords: list[Chord]) -> str:
+        ...
+
+
+class Decoder(Protocol):
+    def decode_measure(self, code: str) -> list[Chord]:
+        ...
 
 
 class StandardEncoder:
