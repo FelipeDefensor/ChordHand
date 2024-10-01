@@ -557,14 +557,12 @@ class ProjetoMPBMainWindow(MainWindow):
                 fundamental = row[0]
                 baixo = row[1]
                 tipo_acordal = row[2].to_symbol()
-                funcao = function_code_to_symbol[row[3]]
+                funcao = function_code_to_symbol[row[3]] if row[3] else ''
                 tonica = row[4]
                 modo = row[5]
                 posicao = row[6]
 
                 csv_writer.writerow([corpus, musica, fundamental, baixo, tipo_acordal, funcao, tonica, modo, posicao])
-
-        pd.read_csv(path, header=None).T.to_csv(path, header=False, index=False)
 
     def write_csv_projeto_mpb_old_db(self, path):
         from chord_hand.chord.quality import CustomChordQuality
@@ -580,13 +578,14 @@ class ProjetoMPBMainWindow(MainWindow):
                 baixo = row[1]
                 genus = ord(row[2].to_chordal_type()[0]) if not is_quality_custom else ''
                 variante = row[2].to_chordal_type()[1] if not is_quality_custom else ''  # variante
-                funcao = row[3]
+                funcao = row[3] or ''
                 tonica = row[4]
                 modo = row[5]
                 posicao = row[6]
 
                 csv_writer.writerow([fundamental, baixo, genus, variante, funcao, tonica, modo, posicao])
 
+        pd.read_csv(path, header=None).T.to_csv(path, header=False, index=False)
 
 def serialize_chord(chord):
     if not chord:
