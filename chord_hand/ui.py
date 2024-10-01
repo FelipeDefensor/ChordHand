@@ -88,16 +88,22 @@ class MainWindow(QMainWindow):
 
             file_menu.addSeparator()
 
-            export_text_action = file_menu.addAction("Export as text...")
-            export_text_action.triggered.connect(self.export_as_text)
-
-            export_tilia_action = file_menu.addAction("Export as TiLiA CSV...")
-            export_tilia_action.triggered.connect(self.export_as_tilia)
+            to_text_action = file_menu.addAction("View as text...")
+            to_text_action.triggered.connect(view_as_text_func)
 
             file_menu.addSeparator()
 
-            to_text_action = file_menu.addAction("View as text...")
-            to_text_action.triggered.connect(view_as_text_func)
+            export_menu = self.export_menu = file_menu.addMenu('Export as..')
+
+            export_text_action = export_menu.addAction("Text...")
+            export_text_action.triggered.connect(self.export_as_text)
+
+            export_csv_action = export_menu.addAction("CSV...")
+            export_csv_action.triggered.connect(self.export_as_csv)
+
+            export_tilia_action = export_menu.addAction("TiLiA CSV...")
+            export_tilia_action.triggered.connect(self.export_as_tilia)
+
 
             file_menu.addSeparator()
 
@@ -353,48 +359,51 @@ class MainWindow(QMainWindow):
                     f.write(analysis.to_symbol() + ' ')
                 f.write(' | ')
 
+    def write_csv(self, path):
+        # each iteration is a measure
+        data = []
+        measure_number = 1
+        for (chords, region, analyses) in zip(self.get_chords(), self.get_regions(), self.get_analyses()):
+            chord_number = 0
+            for chord, analysis in zip(chords, analyses):
+                data.append(
+                   [chord.root.to_symbol(), chord.bass.to_symbol(), chord.quality.to_symbol(), region.tonic.to_symbol(), region.modality.name.lower(), analysis.to_symbol(), measure_number + chord_number / len(chords)]
+                )
+                chord_number += 1
+            measure_number += 1
+
+        with open(path, 'w', newline='', encoding='utf-8') as f:
+            csv_writer = csv.writer(f)
+            csv_writer.writerow(['root', 'bass', 'quality', 'tonic', 'mode', 'analysis', 'position'])
+            csv_writer.writerows(data)
+
     @staticmethod
     def get_file_save_path(initial, name_filter):
         return QFileDialog.getSaveFileName(
             None, 'Save', initial, name_filter
         )
 
-    def export_as_projeto_mpb_old_db(self):
-        self.analyze_harmonies()
-
-        path, success = self.get_file_save_path('untitled.csv', '*.csv')
+    def export(self, write_func, name_filter):
+        extension = Path(name_filter).suffix
+        path, success = self.get_file_save_path('Untitled' + extension, name_filter)
         if not success:
             return
 
+        self.analyze_harmonies()
+
         try:
-            self.write_csv_projeto_mpb(path)
-            pd.read_csv(path, header=None).T.to_csv(path, header=False, index=False)
+            write_func(path)
         except:
             display_error('Export error', traceback.format_exc())
 
     def export_as_tilia(self):
-        self.analyze_harmonies()
-
-        path, success = self.get_file_save_path('untitled.csv', '*.csv')
-        if not success:
-            return
-
-        try:
-            self.write_csv_tilia(path)
-        except:
-            display_error('Export error', traceback.format_exc())
+        return self.export(self.write_csv_tilia, '*.csv')
 
     def export_as_text(self):
-        path, success = self.get_file_save_path('untitled.txt', '*.txt')
-        if not success:
-            return
+        return self.export(self.write_txt, '*.txt')
 
-        self.analyze_harmonies()
-
-        try:
-            self.write_txt(path)
-        except:
-            display_error('Export error', traceback.format_exc())
+    def export_as_csv(self):
+        return self.export(self.write_csv, '*.csv')
 
     @staticmethod
     def open_settings():
@@ -482,32 +491,17 @@ class ProjetoMPBMainWindow(MainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        projeto_mpb_menu = self.menuBar().addMenu('Projeto MPB')
+        export_new_action = self.export_menu.addAction('ProejtoMPB CSV (new database)...')
+        export_new_action.triggered.connect(self.export_as_projeto_mpb_new)
 
-        export_old_action = projeto_mpb_menu.addAction('Export as CSV (Old database)...')
-        export_old_action.triggered.connect(functools.partial(self.export_as_projeto_mpb, 'old'))
+        export_old_action = self.export_menu.addAction('ProjetoMPB CSV (old database)...')
+        export_old_action.triggered.connect(self.export_as_projeto_mpb_old)
 
-        export_new_action = projeto_mpb_menu.addAction('Export as CSV (New database)...')
-        export_new_action.triggered.connect(functools.partial(self.export_as_projeto_mpb, 'new'))
+    def export_as_projeto_mpb_old(self):
+        return self.export(self.write_csv_projeto_mpb_old_db, '*.csv')
 
-    def export_as_projeto_mpb(self, db_type):
-        self.analyze_harmonies()
-
-        path, success = self.get_file_save_path('untitled.csv', '*.csv')
-        if not success:
-            return
-
-        write_func = {
-            'old': self.write_csv_projeto_mpb_old_db,
-            'new': self.write_csv_projeto_mpb_new_db
-        }[db_type]
-
-        try:
-            write_func(path)
-            if db_type == 'old':
-                pd.read_csv(path, header=None).T.to_csv(path, header=False, index=False)
-        except:
-            display_error('Export error', traceback.format_exc())
+    def export_as_projeto_mpb_new(self):
+        return self.export(self.write_csv_projeto_mpb_new_db, '*.csv')
 
     def get_projeto_mpb_data(self):
         from chord_hand.chord.quality import CustomChordQuality
@@ -569,6 +563,8 @@ class ProjetoMPBMainWindow(MainWindow):
                 posicao = row[6]
 
                 csv_writer.writerow([corpus, musica, fundamental, baixo, tipo_acordal, funcao, tonica, modo, posicao])
+
+        pd.read_csv(path, header=None).T.to_csv(path, header=False, index=False)
 
     def write_csv_projeto_mpb_old_db(self, path):
         from chord_hand.chord.quality import CustomChordQuality
