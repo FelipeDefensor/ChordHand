@@ -2,5 +2,4 @@ PyQt6-Qt6==6.6.3
 PyQt6_sip==13.8.0
 PyQt6==6.6.1
 platformdirs~=4.2.2
-pandas~=2.2.1
 tomli~=2.0.1

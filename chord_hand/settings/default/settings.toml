@@ -2,3 +2,10 @@
 standard = ["encoding.standard.StandardEncoder", "encoding.standard.StandardDecoder"]
 projeto_mpb = ["encoding.projeto_mpb.ProjetoMPBEncoder", "encoding.projeto_mpb.ProjetoMPBDecoder"]
 active = "standard"
+
+[exporters]
+text = ['Text', 'export.export_standard_txt']
+csv = ['CSV', 'export.export_standard_csv']
+tilia = ['TiLiA', 'export.export_tilia_csv']
+projeto_mpb_new = ['Projeto MPB (new)', 'projeto_mpb.export_projeto_mpb_new_csv']
+projeto_mpb_old = ['Projeto MPB (old)', 'projeto_mpb.export_projeto_mpb_old_csv']

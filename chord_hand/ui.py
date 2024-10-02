@@ -1,14 +1,11 @@
 from __future__ import annotations
-import csv
 import functools
-import itertools
 import json
 import subprocess
 import sys
 import traceback
 from pathlib import Path
 
-import pandas as pd
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap, QPalette
 from PyQt6.QtWidgets import (
@@ -23,7 +20,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
 )
 
-from chord_hand.analysis import HarmonicAnalysis, Modality
+from chord_hand.analysis import HarmonicAnalysis
 from chord_hand.cell import CELL_WIDTH, Cell
 from chord_hand.chord.chord import Chord
 from chord_hand.dirs import SETTINGS_DIR
@@ -32,6 +29,7 @@ from chord_hand.crash_dialog import CrashDialog
 
 from chord_hand.analysis.harmonic_region import HarmonicRegion
 from chord_hand.encoding.standard import StandardEncoder
+from chord_hand.settings import name_to_exporter
 
 LINE_LENGTH = 4
 FIELD_HEIGHT = 40
@@ -95,15 +93,9 @@ class MainWindow(QMainWindow):
 
             export_menu = self.export_menu = file_menu.addMenu('Export as..')
 
-            export_text_action = export_menu.addAction("Text...")
-            export_text_action.triggered.connect(self.export_as_text)
-
-            export_csv_action = export_menu.addAction("CSV...")
-            export_csv_action.triggered.connect(self.export_as_csv)
-
-            export_tilia_action = export_menu.addAction("TiLiA CSV...")
-            export_tilia_action.triggered.connect(self.export_as_tilia)
-
+            for id, (name, func) in name_to_exporter.items():
+                action = export_menu.addAction(name + '...')
+                action.triggered.connect(functools.partial(self.export, id))
 
             file_menu.addSeparator()
 
@@ -321,89 +313,11 @@ class MainWindow(QMainWindow):
                 file,
             )
 
-    def write_csv_tilia(self, path):
-        with open(path, 'w', newline='', encoding='utf-8') as f:
-            csv_writer = csv.writer(f)
-            csv_writer.writerow(['measure', 'fraction', 'label', 'region', 'analyses'])
-            for i, (chords, region, analyses) in enumerate(itertools.zip_longest(self.get_chords(), self.get_regions(), self.get_analyses())):
-                for j, chord in enumerate(chords):
-                    csv_writer.writerow([
-                        i + 1,
-                        (j / len(chords)) % 1,
-                        chord.to_symbol() if chord else '',
-                        region.tonic.to_symbol() if region else '',
-                        " ".join([a.to_symbol() for a in analyses]) if (analyses and region) else '',
-                    ])
-
-    def write_txt(self, path):
-        with open(path, 'w', newline='', encoding='utf-8') as f:
-            f.write('CHORDS: ')
-            for measure in self.get_chords():
-                for chord in measure:
-                    f.write(chord.to_symbol() if chord else '?' + ' ')
-                f.write(' | ')
-            f.write('\n')
-
-            f.write('REGIONS: ')
-            prev_region = None
-            for region in self.get_regions():
-                if region != prev_region:
-                    f.write(region.to_symbol() + ' ')
-                    prev_region = region
-                f.write(' | ')
-            f.write('\n')
-
-            f.write('ANALYSES: ')
-            for measure in self.get_analyses():
-                for analysis in measure:
-                    f.write(analysis.to_symbol() + ' ')
-                f.write(' | ')
-
-    def write_csv(self, path):
-        # each iteration is a measure
-        data = []
-        measure_number = 1
-        for (chords, region, analyses) in zip(self.get_chords(), self.get_regions(), self.get_analyses()):
-            chord_number = 0
-            for chord, analysis in zip(chords, analyses):
-                data.append(
-                   [chord.root.to_symbol(), chord.bass.to_symbol(), chord.quality.to_symbol(), region.tonic.to_symbol(), region.modality.name.lower(), analysis.to_symbol(), measure_number + chord_number / len(chords)]
-                )
-                chord_number += 1
-            measure_number += 1
-
-        with open(path, 'w', newline='', encoding='utf-8') as f:
-            csv_writer = csv.writer(f)
-            csv_writer.writerow(['root', 'bass', 'quality', 'tonic', 'mode', 'analysis', 'position'])
-            csv_writer.writerows(data)
-
-    @staticmethod
-    def get_file_save_path(initial, name_filter):
-        return QFileDialog.getSaveFileName(
-            None, 'Save', initial, name_filter
-        )
-
-    def export(self, write_func, name_filter):
-        extension = Path(name_filter).suffix
-        path, success = self.get_file_save_path('Untitled' + extension, name_filter)
-        if not success:
-            return
-
-        self.analyze_harmonies()
-
+    def export(self, exporter_name):
         try:
-            write_func(path)
+            name_to_exporter[exporter_name][1](self.get_chords(), self.get_regions(), self.get_analyses())
         except:
             display_error('Export error', traceback.format_exc())
-
-    def export_as_tilia(self):
-        return self.export(self.write_csv_tilia, '*.csv')
-
-    def export_as_text(self):
-        return self.export(self.write_txt, '*.txt')
-
-    def export_as_csv(self):
-        return self.export(self.write_csv, '*.csv')
 
     @staticmethod
     def open_settings():
@@ -487,106 +401,6 @@ class MainWindow(QMainWindow):
         widget.show()
 
 
-class ProjetoMPBMainWindow(MainWindow):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        export_new_action = self.export_menu.addAction('ProejtoMPB CSV (new database)...')
-        export_new_action.triggered.connect(self.export_as_projeto_mpb_new)
-
-        export_old_action = self.export_menu.addAction('ProjetoMPB CSV (old database)...')
-        export_old_action.triggered.connect(self.export_as_projeto_mpb_old)
-
-    def export_as_projeto_mpb_old(self):
-        return self.export(self.write_csv_projeto_mpb_old_db, '*.csv')
-
-    def export_as_projeto_mpb_new(self):
-        return self.export(self.write_csv_projeto_mpb_new_db, '*.csv')
-
-    def get_projeto_mpb_data(self):
-        from chord_hand.chord.quality import CustomChordQuality
-        from chord_hand.projeto_mpb import analysis_to_projeto_mpb_code
-
-        rows = []
-        for i, (chords, analyses, region) in enumerate(
-                itertools.zip_longest(self.get_chords(), self.get_analyses(), self.get_regions())):
-            for j, (chord, analysis) in enumerate(itertools.zip_longest(chords, analyses)):
-                position = round((i + 1) + j / len(chords), 3)  # compasso.fração
-                symbol = chord.to_symbol() if chord else ''
-                region_symbol = region.to_symbol() if region else ''
-                if chord and isinstance(chord, Chord):  # incomplete code will result in a Note instead
-                    is_quality_custom = isinstance(chord.quality, CustomChordQuality)
-                    row = [
-                        chord.root.to_pitch_class(),  # fundamental
-                        chord.bass.to_pitch_class(),  # baixo
-                        chord.quality if not is_quality_custom else '',  # qualidade
-                        analysis_to_projeto_mpb_code(
-                            analysis, region.modality if region_symbol else ''
-                        ) if region_symbol and not is_quality_custom else '',
-                        # função harmônica
-                        region.tonic.to_pitch_class() if region else '',  # tônica
-                        {Modality.MAJOR: 1, Modality.MINOR: 0}[region.modality] if region else '',  # modo
-                        position,  # compasso.fração
-                        symbol,  # símbolo
-                        region_symbol,  # região
-                    ]
-                else:
-                    row = ['', '', '', '', '', position, symbol, region_symbol]
-                rows.append(row)
-
-        return rows
-
-    def write_csv_projeto_mpb_new_db(self, path):
-        pmpb_path = Path(__file__).parent / 'encoding' / 'projeto_mpb'
-        lex_functions = pmpb_path / 'lex-functions.csv'
-
-        function_code_to_symbol = {}
-        with open(lex_functions, 'r', encoding='utf-8') as f:
-            reader = csv.reader(f)
-
-            for code, symbol in reader:
-                function_code_to_symbol[code] = symbol
-
-        data = self.get_projeto_mpb_data()
-        with open(path, 'w', newline='', encoding='utf-8') as f:
-            csv_writer = csv.writer(f)
-            csv_writer.writerow(['corpus', 'musica', 'fundamental', 'baixo', 'cifra', 'função', 'tonica', 'modo', 'posição'])
-            for row in data:
-                corpus = ''
-                musica = ''
-                fundamental = row[0]
-                baixo = row[1]
-                tipo_acordal = row[2].to_symbol()
-                funcao = function_code_to_symbol[row[3]] if row[3] else ''
-                tonica = row[4]
-                modo = row[5]
-                posicao = row[6]
-
-                csv_writer.writerow([corpus, musica, fundamental, baixo, tipo_acordal, funcao, tonica, modo, posicao])
-
-    def write_csv_projeto_mpb_old_db(self, path):
-        from chord_hand.chord.quality import CustomChordQuality
-
-        data = self.get_projeto_mpb_data()
-
-        with open(path, 'w', newline='', encoding='utf-8') as f:
-            csv_writer = csv.writer(f)
-            for row in data:
-                is_quality_custom = isinstance(row[3], CustomChordQuality)
-
-                fundamental = row[0]
-                baixo = row[1]
-                genus = ord(row[2].to_chordal_type()[0]) if not is_quality_custom else ''
-                variante = row[2].to_chordal_type()[1] if not is_quality_custom else ''  # variante
-                funcao = row[3] or ''
-                tonica = row[4]
-                modo = row[5]
-                posicao = row[6]
-
-                csv_writer.writerow([fundamental, baixo, genus, variante, funcao, tonica, modo, posicao])
-
-        pd.read_csv(path, header=None).T.to_csv(path, header=False, index=False)
-
 def serialize_chord(chord):
     if not chord:
         return "RepeatChord()"
@@ -608,3 +422,5 @@ def serialize_analysis(analysis):
 def show_crash_dialog(data_dump, exc_message):
     dialog = CrashDialog(exc_message, data_dump)
     dialog.exec()
+
+

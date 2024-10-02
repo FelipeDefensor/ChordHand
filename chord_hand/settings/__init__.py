@@ -18,6 +18,7 @@ default_analyses_major = {}
 default_analyses_minor = {}
 name_to_analytic_type = {}
 analytic_type_args_to_projeto_mpb_code = {}
+name_to_exporter = {}
 
 
 def my_import(name):
@@ -43,6 +44,15 @@ def init_decoder_and_encoder():
     global encoder, decoder
     encoder = encoder_cls()
     decoder = decoder_cls()
+
+
+def init_exporters():
+    with open(SETTINGS_DIR / 'settings.toml', 'rb') as f:
+        data = tomli.load(f)
+
+    global name_to_exporter
+    for name, (display_name, func_path)in data['exporters'].items():
+        name_to_exporter[name] = (display_name, my_import(func_path))
 
 
 def init_chord_symbols():
