@@ -8,16 +8,6 @@ from chord_hand.chord.quality import ChordQuality, CustomChordQuality
 from chord_hand.settings import key_to_chord_quality
 
 
-class Encoder(Protocol):
-    def encode_measure(self, chords: list[Chord]) -> str:
-        ...
-
-
-class Decoder(Protocol):
-    def decode_measure(self, code: str) -> list[Chord]:
-        ...
-
-
 class StandardEncoder:
     def encode_measure(self, chords):
         return ''.join([self._encode_chord(chord) for chord in chords])

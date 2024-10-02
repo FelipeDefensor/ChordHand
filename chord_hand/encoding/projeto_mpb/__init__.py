@@ -4,6 +4,7 @@ from chord_hand.chord.quality import ChordQuality
 from chord_hand.chord.note import Note
 from .maps import code_to_quality, quality_to_code
 
+
 class ProjetoMPBDecoder:
     def decode_measure(self, code):
         if not code:

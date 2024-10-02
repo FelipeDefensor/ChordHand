@@ -1,4 +1,17 @@
+from asyncio import Protocol
+
+from chord_hand.chord.chord import Chord
 from chord_hand.chord.keymap import NEXT_BAR_CODE, REPEAT_CHORD_CODE, SLASH
+
+
+class Encoder(Protocol):
+    def encode_measure(self, chords: list[Chord]) -> str:
+        ...
+
+
+class Decoder(Protocol):
+    def decode_measure(self, code: str) -> list[Chord]:
+        ...
 
 
 def decode_chord_code_sequence(text):
