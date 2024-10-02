@@ -16,9 +16,10 @@ a = Analysis(
     datas=[
         ("./README.md", "."),
         ("./chord_hand/settings", "./chord_hand/settings"),
+        ("./chord_hand/encoding/projeto_mpb/lex-functions.csv", "./chord_hand/encoding/projeto_mpb"),
         ("./chord_hand/img", "./chord_hand/img"),
     ],
-    hiddenimports=[],
+    hiddenimports=['chord_hand.export', 'chord_hand.projeto_mpb'],
     hookspath=None,
     runtime_hooks=None,
     excludes=None,
@@ -26,44 +27,32 @@ a = Analysis(
 
 pyz = PYZ(a.pure)
 
-if options.debug:
-    exe = EXE(
-        pyz,
-        a.scripts,
-        name="ChordHand",
-        console=True,
-        embed_manifest=True,
-        exclude_binaries=True,
-    )
-
-    coll = COLLECT(exe, a.datas, a.binaries, name="ChordHand")
-else:
-    exe = EXE(
-        pyz,
-        a.scripts,
-        a.datas,
-        a.binaries,
-        name="ChordHand",
-	    console=False,
-        embed_manifest=True,
-    )
-    app = BUNDLE(
-        exe,
-        name='ChordHand.app',
-        version='0.0.1',
-        info_plist={
-            'NSPrincipalClass': 'NSApplication',
-            'NSAppleScriptEnabled': False,
-            'CFBundleDocumentTypes': [
-                {
-                    'CFBundleTypeName': 'My File Format',
-                    'CFBundleTypeIconFile': 'MyFileIcon.icns',
-                    'LSItemContentTypes': ['com.example.myformat'],
-                    'LSHandlerRank': 'Owner'
-                    }
-                ]
-            },
-    )
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.datas,
+    a.binaries,
+    name="ChordHand",
+    console=False,
+    embed_manifest=True,
+)
+app = BUNDLE(
+    exe,
+    name='ChordHand.app',
+    version='0.0.1',
+    info_plist={
+        'NSPrincipalClass': 'NSApplication',
+        'NSAppleScriptEnabled': False,
+        'CFBundleDocumentTypes': [
+            {
+                'CFBundleTypeName': 'My File Format',
+                'CFBundleTypeIconFile': 'MyFileIcon.icns',
+                'LSItemContentTypes': ['com.example.myformat'],
+                'LSHandlerRank': 'Owner'
+                }
+            ]
+        },
+)
 
 
 
