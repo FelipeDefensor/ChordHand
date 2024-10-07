@@ -44,7 +44,7 @@ def get_projeto_mpb_base_data(chords, regions, analyses):
                 row = [
                     chord.root.to_pitch_class(),  # fundamental
                     chord.bass.to_pitch_class(),  # baixo
-                    chord.quality if not is_quality_custom else '',  # qualidade
+                    chord.quality,  # qualidade
                     analysis_to_projeto_mpb_code(
                         analysis, region.modality if region_symbol else ''
                     ) if region_symbol and not is_quality_custom else '',
