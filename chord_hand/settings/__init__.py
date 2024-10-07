@@ -30,13 +30,8 @@ def my_import(name):
     return mod
 
 
-def init_settings_folder():
-    if not SETTINGS_DIR.exists():
-        shutil.copytree(Path(__file__).parent / 'default', SETTINGS_DIR, dirs_exist_ok=True)
-
-
 def init_decoder_and_encoder():
-    with open(SETTINGS_DIR / 'settings.toml', 'rb') as f:
+    with OpenSettingsBinaryFile('settings.toml') as f:
         data = tomli.load(f)
 
     active = data['encoding']['active']
@@ -47,7 +42,7 @@ def init_decoder_and_encoder():
 
 
 def init_exporters():
-    with open(SETTINGS_DIR / 'settings.toml', 'rb') as f:
+    with OpenSettingsBinaryFile('settings.toml') as f:
         data = tomli.load(f)
 
     global name_to_exporter
@@ -59,7 +54,7 @@ def init_chord_symbols():
     from chord_hand.chord.quality import ChordQuality
 
     # Should be called by main, hence 'settings' must be in the path
-    with open(SETTINGS_DIR / 'chord_symbols.csv', 'r', newline='', encoding='utf-8') as f:
+    with OpenSettingsFile('chord_symbols.csv') as f:
         reader = csv.reader(f)
         next(reader, None)  # skip header
         for raw_quality, symbol in reader:
@@ -72,7 +67,7 @@ def init_chordal_type():
     from chord_hand.chord.quality import ChordQuality
 
     # Should be called by main, hence 'settings' must be in the path
-    with open(SETTINGS_DIR / 'chordal_types.csv', 'r', newline='', encoding='utf-8') as f:
+    with OpenSettingsFile('chordal_types.csv') as f:
         reader = csv.reader(f)
         next(reader, None)  # skip header
         for raw_quality, raw_chordal_type in reader:
@@ -86,7 +81,7 @@ def init_keymap():
     from chord_hand.chord.quality import ChordQuality
 
     # Should be called by main, hence 'settings' must be in the path
-    with open(SETTINGS_DIR / 'keymap.csv', 'r', newline='', encoding='utf-8') as f:
+    with OpenSettingsFile('keymap.csv') as f:
         reader = csv.reader(f)
         next(reader, None)  # skip header
         for key, raw_chord_quality in reader:
@@ -107,7 +102,7 @@ def init_default_analyses():
         # ('default_analyses_minor', default_analyses_minor)
     ]
     for filename, default_analyses in args:
-        with open(SETTINGS_DIR / f'{filename}.csv', 'r', newline='', encoding='utf-8') as f:
+        with OpenSettingsFile(f'{filename}.csv') as f:
             reader = csv.reader(f)
             next(reader, None)  # skip symbol line
             quality_strings = next(reader)[3:]
@@ -122,7 +117,7 @@ def init_analytic_types():
     from chord_hand.analysis import AnalyticType
 
     # Should be called by main, hence 'settings' must be in the path
-    with open(SETTINGS_DIR / 'analytic_types.csv', 'r', newline='', encoding='utf-8') as f:
+    with OpenSettingsFile('analytic_types.csv') as f:
         reader = csv.reader(f)
         next(reader, None)  # skip header
 
@@ -148,7 +143,7 @@ def init_projeto_mpb_function_codes():
     analytic_type_args_to_projeto_mpb_code[Modality.MAJOR] = {}
     analytic_type_args_to_projeto_mpb_code[Modality.MINOR] = {}
 
-    with open(SETTINGS_DIR / 'projeto_mpb_function_codes.csv', 'r', newline='', encoding='utf-8') as f:
+    with OpenSettingsFile('projeto_mpb_function_codes.csv') as f:
         reader = csv.reader(f)
         next(reader, None)  # skip header
         for function, analytic_type_string, step, major_chroma, minor_chroma, major_qualities, minor_qualities, code in reader:
@@ -158,3 +153,31 @@ def init_projeto_mpb_function_codes():
             if minor_chroma:
                 key = (analytic_type_string, int(step), int(minor_chroma))
                 init_code(key, minor_qualities, Modality.MINOR)
+
+
+class OpenSettingsFile:
+    def __init__(self, name: str, mode: str = 'r'):
+        self.name = name
+        self.mode = mode
+        self.path = SETTINGS_DIR / name
+
+    def open_file(self):
+        self.file = open(self.path, self.mode, newline='', encoding='utf-8')
+
+    def __enter__(self):
+        if not self.path.exists():
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(Path(__file__).parent / 'default' / self.name, self.path)
+        self.open_file()
+        return self.file
+
+    def __exit__(self, type, value, traceback):
+        self.file.close()
+
+
+class OpenSettingsBinaryFile(OpenSettingsFile):
+    def __init__(self, name: str, mode: str = 'rb'):
+        super().__init__(name, mode)
+
+    def open_file(self):
+        self.file = open(self.path, self.mode)

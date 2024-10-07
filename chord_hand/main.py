@@ -6,11 +6,10 @@ from PyQt6.QtWidgets import QApplication
 from chord_hand import ui
 from chord_hand.ui import MainWindow
 from chord_hand.settings import init_decoder_and_encoder, init_chord_symbols, init_chordal_type, init_keymap, \
-    init_default_analyses, init_analytic_types, init_settings_folder, init_projeto_mpb_function_codes, init_exporters
+    init_default_analyses, init_analytic_types, init_projeto_mpb_function_codes, init_exporters
 
 
 def init_settings():
-    init_settings_folder()
     init_decoder_and_encoder()
     init_exporters()
     init_chord_symbols()
